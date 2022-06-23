@@ -377,6 +377,7 @@ NTT(GPREL_NMF,        RELS(R(TLS_LD)),                                INSNS(ADDI
 NIP32("addiu[gp.b]",    0x440c0000,    EXT_REG(21, 5),       NULL,                  NULL,                 NULL)
 NTT(ABS32_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(HI20, SREG), ORI32(LO12, TREG, SREG)))
 NTT(PCREL32_LONG,     RELS(R(GPREL18)),                               INSNS(ALUIPC32(PC_HI20, SREG), ORI32(LO12, TREG, SREG)))
+NTT(GPREL32_WORD,     RELS(R(GPREL18)),                               INSNS(ADDIUGPW32))
 NTT(GPREL_NMF,        RELS(R(GPREL18)),                               INSNS(ADDIUGP48(GPREL_I32, TREG)))
 NTT(GPREL_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(GPREL_HI20, SREG), ORI32(GPREL_LO12, SREG, SREG), ADDUGP32(SREG, TREG)))
 

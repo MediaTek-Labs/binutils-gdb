@@ -5519,6 +5519,17 @@ Nanomips_expand_insn<size, big_endian>::type(
         break;
       }
     case elfcpp::R_NANOMIPS_GPREL18:
+      {
+        Valtype value = psymval->value(relobj, r_addend) - gp;
+        if (gp == invalid_address
+            || !this->template has_overflow_unsigned<18>(value))
+          return TT_NONE;
+	else if (gp != invalid_address
+		 && !this->template has_overflow_unsigned<21>(value)
+		 && ((value & 0x3) == 0))
+          return TT_GPREL32_WORD;
+        break;
+      }
     case elfcpp::R_NANOMIPS_GPREL17_S1:
       {
         Valtype value = psymval->value(relobj, r_addend) - gp;
