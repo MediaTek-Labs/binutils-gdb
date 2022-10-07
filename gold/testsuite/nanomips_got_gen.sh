@@ -37,14 +37,14 @@ check()
 # Test generated dynamic relocations with readelf.
 check nanomips_got_gen.stdout "Relocation section '.rel.dyn' at offset 0x208 contains 3 entries:"
 check nanomips_got_gen.stdout "00020008  00000009 R_NANOMIPS_RELATI"
-check nanomips_got_gen.stdout "00020010  0000010a R_NANOMIPS_GLOBAL 00000000   an_extra_ordinarily_lo"
-check nanomips_got_gen.stdout "0002000c  0000030a R_NANOMIPS_GLOBAL 00000000   strcmp"
+check nanomips_got_gen.stdout "00020010  [0-9a-f]\+ R_NANOMIPS_GLOBAL 00000000   an_extra_ordinarily_lo"
+check nanomips_got_gen.stdout "0002000c  [0-9a-f]\+ R_NANOMIPS_GLOBAL 00000000   strcmp"
 check nanomips_got_gen.stdout "Relocation section '.rel.nanoMIPS.stubs' at offset 0x220 contains 1 entries:"
 check nanomips_got_gen.stdout "00020014  0000020b R_NANOMIPS_JUMP_S 00000000   memcpy"
 
 check nanomips_got_gen_wide.stdout "00020008  00000009 R_NANOMIPS_RELATIVE"
-check nanomips_got_gen_wide.stdout "00020010  0000010a R_NANOMIPS_GLOBAL      00000000   an_extra_ordinarily_long_function_name_for_testing_readelf_output_width_control"
-check nanomips_got_gen_wide.stdout "0002000c  0000030a R_NANOMIPS_GLOBAL      00000000   strcmp"
+check nanomips_got_gen_wide.stdout "00020010  [0-9a-f]\+ R_NANOMIPS_GLOBAL      00000000   an_extra_ordinarily_long_function_name_for_testing_readelf_output_width_control"
+check nanomips_got_gen_wide.stdout "0002000c  [0-9a-f]\+ R_NANOMIPS_GLOBAL      00000000   strcmp"
 check nanomips_got_gen_wide.stdout "00020014  0000020b R_NANOMIPS_JUMP_SLOT   00000000   memcpy"
 
 # Test generated GOT entries with readelf.
