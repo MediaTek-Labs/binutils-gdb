@@ -5669,6 +5669,30 @@ reloc_list_head_to_fix (struct nanomips_cl_insn *ip)
   reloc_list = reloc_list->next;
 }
 
+/* Get the number of bytes a link-time relaxation can add to this
+   subtype of FRAGP.  The subtype maps to a BFD relocation and that
+   combined with it toofar16 flag is used to determine the sop.  */
+
+static bfd_vma
+frag_subtype_to_relax_sop (relax_substateT fr_subtype)
+{
+  enum relax_nanomips_subtype rt = RELAX_MD_TYPE (fr_subtype);
+  bfd_boolean toofar16 = RELAX_MD_TOOFAR16 (fr_subtype);
+  return (get_reloc_sop (frag_subtype_to_reloc (rt, toofar16)));
+}
+
+/* Get the number of bytes a link-time relaxation can remve from this
+   subtype of FRAGP.  The subtype maps to a BFD relocation and that
+   combined with it toofar16 flag is used to determine the sop.  */
+
+static bfd_vma
+frag_subtype_to_relax_sink (relax_substateT fr_subtype)
+{
+  enum relax_nanomips_subtype rt = RELAX_MD_TYPE (fr_subtype);
+  bfd_boolean toofar16 = RELAX_MD_TOOFAR16 (fr_subtype);
+  return (get_reloc_sink (frag_subtype_to_reloc (rt, toofar16)));
+}
+
 static void
 record_insn_sops (fragS *fragP, asection *sec,
 		  bfd_reloc_code_real_type *reloc_type)
@@ -5678,6 +5702,11 @@ record_insn_sops (fragS *fragP, asection *sec,
     {
       rsop = get_explicit_reloc_sop (reloc_list->u.a.howto->type);
       rsink = get_explicit_reloc_sink (reloc_list->u.a.howto->type);
+    }
+  else if (*reloc_type > BFD_RELOC_UNUSED)
+    {
+      rsop = frag_subtype_to_relax_sop (RELAX_MD_TYPE (fragP->fr_subtype));
+      rsink = frag_subtype_to_relax_sink (RELAX_MD_TYPE (fragP->fr_subtype));
     }
   else
     {
@@ -5986,8 +6015,9 @@ append_insn (struct nanomips_cl_insn *ip, expressionS *address_expr,
   if (!forced_insn_length
       && !forced_insn_format
       && ((!ip->complete_p
-	   && !pcrel_branch_reloc_p (*reloc_type)
-	   && *reloc_type < BFD_RELOC_UNUSED)
+	   && (!nanomips_opts.minimize_relocs
+	       || (*reloc_type < BFD_RELOC_UNUSED
+		   && !pcrel_branch_reloc_p (*reloc_type))))
 	  || explicit_reloc_label_p (ip->frag, now_seg)))
     record_insn_sops (ip->frag, now_seg, reloc_type);
 
@@ -11063,18 +11093,6 @@ nanomips_frag_match (fragS *head, fragS *matchP)
   return (head == matchP);
 }
 
-/* Get the number of bytes a link-time relaxation can add to this
-   subtype of FRAGP.  The subtype maps to a BFD relocation and that
-   combined with it toofar16 flag is used to determine the sop.  */
-
-static bfd_vma
-frag_subtype_to_relax_sop (relax_substateT fr_subtype)
-{
-  enum relax_nanomips_subtype rt = RELAX_MD_TYPE (fr_subtype);
-  bfd_boolean toofar16 = RELAX_MD_TOOFAR16 (fr_subtype);
-  return (get_reloc_sop (frag_subtype_to_reloc (rt, toofar16)));
-}
-
 /* Check if the OFFSET is within the range of the branch relocation
    for this frag subtype.  */
 
@@ -11183,15 +11201,9 @@ mark_if_invariable_branch (fragS *fragp, asection *sec)
     {
       if (!RELAX_MD_NORELAX (fragp->fr_subtype))
 	{
-	  /* External reference will not change over multiple iterations.
-	     We can calculate the sop once and store it to short-circuit
-	     repeated look-ups below.  */
 	  fragp->fr_subtype = RELAX_MD_MARK_NORELAX
 	    (fragp->fr_subtype);
 	  fragp->tc_frag_data.link_var = TRUE;
-	  fragp->tc_frag_data.relax_sop
-	    += frag_subtype_to_relax_sop (fragp->fr_subtype);
-	  fragp->tc_frag_data.relax_sink += fragp->fr_var;
 	}
       return;
     }

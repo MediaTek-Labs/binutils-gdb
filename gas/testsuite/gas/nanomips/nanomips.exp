@@ -811,4 +811,6 @@ if { [istarget nanomips*-*-*] } {
     run_list_test "relax-jumptable-overflow"
 
     run_dump_test "reloc-sort"
+    run_dump_test_arches "relax-jumptable-insn2" "" \
+					[arch_list_matching xnms]
 }
