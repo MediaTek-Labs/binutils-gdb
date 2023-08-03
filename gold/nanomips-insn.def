@@ -208,6 +208,12 @@
 // restore.jrc16 u, [dst1, dst2, ...]
 #define RESTOREJRC16 NIT16("restore.jrc[16]", 0x1d00, NONE, INS_REG(0, 4, TREG), ins_sres16_fields)
 
+// These two are used for generating trampolines.
+// bc16 4
+#define BC16_FIXED NIT16("bc[16]", 0x1804, FIXED, NULL, NULL)
+// balc16 2
+#define BALC16_FIXED NIT16("balc[16]", 0x3802, FIXED, NULL, NULL)
+
 //
 //
 // Nanomips instruction property
@@ -250,6 +256,8 @@ NTT(PCREL16,          RELS(R(PC25_S1)),                               INSNS(BALC
 NTT(PCREL_NMF,        RELS(R(PC25_S1)),                               INSNS(LAPC48(TREG), JALRC16(SREG)))
 NTT(PCREL16_LONG,     RELS(R(PC25_S1)),                               INSNS(ALUIPC32(PC_HI20, SREG), ORI32(LO12, SREG, SREG), JALRC16(SREG)))
 NTT(PCREL32_LONG,     RELS(R(PC25_S1)),                               INSNS(ALUIPC32(PC_HI20, SREG), ORI32(LO12, SREG, SREG), JALRC32))
+NTT(BALC_TRAMP,       RELS(R(PC25_S1)),                               INSNS(BALC16_FIXED, BC16_FIXED, BC32))
+NTT(BALC_CALL,        RELS(R(PC25_S1)),                               INSNS(BALC16))
 
 // bc sym
 NIP32("bc",             0x28000000,    NULL,                 NULL,                  NULL,                 NULL)

@@ -78,6 +78,9 @@ enum Transform_type
   TT_PCREL16_ZERO,
   // Transform to avoid hw110880 issue
   TT_IMM48_FIX,
+  // Transform balc 32-bit to balc 16-bit via trampoline.
+  TT_BALC_CALL,
+  TT_BALC_TRAMP,
 };
 
 // The Nanomips_insn_template class is to store information about a

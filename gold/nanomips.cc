@@ -193,6 +193,32 @@ is_forced_insn_length(typename elfcpp::Elf_types<size>::Elf_Addr offset,
   return false;
 }
 
+// Sym number associated with R_NANOMIPS_NONE relocation.
+// 0 If none.
+template<int size, bool big_endian>
+static inline unsigned int
+has_none_reloc(typename elfcpp::Elf_types<size>::Elf_Addr offset,
+                        size_t reloc_count,
+                        size_t relnum,
+                        const unsigned char* preloc)
+{
+  typedef typename elfcpp::Rela<size, big_endian> Reltype;
+  const int reloc_size = elfcpp::Elf_sizes<size>::rela_size;
+
+  preloc += reloc_size;
+  for (size_t i = relnum + 1; i < reloc_count; ++i, preloc += reloc_size)
+    {
+      Reltype reloc(preloc);
+      if (offset != reloc.get_r_offset())
+        break;
+
+      unsigned int r_type = elfcpp::elf_r_type<size>(reloc.get_r_info());
+      if (r_type == elfcpp::R_NANOMIPS_NONE)
+        return elfcpp::elf_r_sym<size>(reloc.get_r_info());
+    }
+  return 0;
+}
+
 // Return the GOT offset of the local symbol.  If the symbol does not have
 // a GOT offset, return -1U.
 
@@ -1607,7 +1633,8 @@ class Nanomips_relax_insn : public Nanomips_transformations<size, big_endian>
        size_t relnum,
        uint32_t insn,
        Address address,
-       Address gp);
+       Address gp,
+       bool has_balc_stub2 = false);
 
  protected:
   // Return the type of the relaxation for code and data models.
@@ -1647,7 +1674,8 @@ class Nanomips_relax_insn_finalize
        size_t relnum,
        uint32_t insn,
        Address address,
-       Address gp);
+       Address gp,
+       bool has_balc_stub2 = false);
 };
 
 // The class which implements expansions.
@@ -1679,7 +1707,8 @@ class Nanomips_expand_insn : public Nanomips_transformations<size, big_endian>
        size_t,
        uint32_t insn,
        Address address,
-       Address gp);
+       Address gp,
+       bool has_balc_stub2 = false);
 
  protected:
   // Return the type of the expansion for instruction whose
@@ -1724,7 +1753,40 @@ class Nanomips_expand_insn_finalize
        size_t relnum,
        uint32_t insn,
        Address address,
-       Address gp);
+       Address gp,
+       bool has_balc_stub2 = false);
+};
+
+// The class which implements trampolines.
+
+template<int size, bool big_endian>
+class Nanomips_trampoline : public Nanomips_transformations<size, big_endian>
+{
+  typedef typename elfcpp::Swap<size, big_endian>::Valtype Valtype;
+  typedef typename elfcpp::Elf_types<size>::Elf_Addr Address;
+
+ public:
+  Nanomips_trampoline()
+    : Nanomips_transformations<size, big_endian>()
+  { }
+
+  const Nanomips_insn_property*
+  find_insn(Nanomips_relobj<size, big_endian>* relobj, uint32_t insn,
+            unsigned int mask, unsigned int r_type);
+
+  // Return the transformation type if instruction needs to be transformed.
+  unsigned int
+  type(const Relocate_info<size, big_endian>* relinfo,
+       Target_nanomips<size, big_endian>* target,
+       const Symbol* gsym,
+       const Symbol_value<size>* psymval,
+       const Nanomips_insn_property* insn_property,
+       const elfcpp::Rela<size, big_endian>& reloc,
+       size_t,
+       uint32_t insn,
+       Address address,
+       Address gp,
+       bool has_balc_stub2 = false);
 };
 
 // This class handles .nanoMIPS.abiflags output section.
@@ -1861,10 +1923,33 @@ class Target_nanomips : public Sized_target<size, big_endian>
   typedef typename elfcpp::Swap<size, big_endian>::Valtype Valtype;
   typedef typename elfcpp::Elf_types<size>::Elf_WXword Size_type;
 
+  struct Balc_trampoline
+  {
+    Address address;
+    Address target;
+    bool ignore{true};
+    bool is_trampoline{false};
+
+    Balc_trampoline(Address address_, Address target_)
+      : address(address_), target(target_) { }
+  };
+
+  struct Balc_trampoline_target
+  {
+    int count{0};
+    size_t first;
+    size_t trampoline;
+    size_t last;
+    Address target;
+  };
+
+  typedef std::vector<Balc_trampoline> Balc_trampoline_vector;
+
  public:
   Target_nanomips(const Target::Target_info* info = &nanomips_info)
-    : Sized_target<size, big_endian>(info), state_(NO_TRANSFORM), got_(NULL),
-      stubs_(NULL), rel_dyn_(NULL), copy_relocs_(elfcpp::R_NANOMIPS_COPY),
+    : Sized_target<size, big_endian>(info), state_(NO_TRANSFORM),
+      generating_trampolines_(false), got_(NULL), stubs_(NULL),
+      rel_dyn_(NULL), copy_relocs_(elfcpp::R_NANOMIPS_COPY),
       gp_(NULL), attributes_section_data_(NULL), abiflags_(NULL),
       got_mod_index_offset_(-1U), has_abiflags_section_(false)
   { }
@@ -1873,6 +1958,36 @@ class Target_nanomips : public Sized_target<size, big_endian>
   Sized_symbol<size>*
   make_symbol(const char*, elfcpp::STT, Object*, unsigned int, uint64_t)
   { return new Nanomips_symbol<size>(); }
+
+  // Clear BALC trampolines.
+  void
+  clear_balc_trampolines()
+  { balc_trampolines_.clear(); }
+
+  inline bool is_generating_trampolines() const
+  { return generating_trampolines_; }
+
+  // Add BALC trampoline
+  void
+  add_balc_trampoline(Address address, Address target)
+  {
+    balc_trampolines_.emplace_back(address, target);
+  }
+
+  // Find BALC trampoline by address
+  const Balc_trampoline*
+  find_balc_trampoline(Address address)
+  {
+    static size_t pos = 0;
+    size_t sz = balc_trampolines_.size();
+    for (size_t i = 0; i < sz; ++i)
+    {
+      size_t index = (pos++) % sz;
+      if (balc_trampolines_[index].address == address)
+        return &balc_trampolines_[index];
+    }
+    return nullptr;
+  }
 
   // Process the relocations to determine unreferenced sections for
   // garbage collection.
@@ -2358,11 +2473,16 @@ class Target_nanomips : public Sized_target<size, big_endian>
     // Instruction expansion state.
     EXPAND,
     // Instruction relaxation state.
-    RELAX
+    RELAX,
+    TRAMPOLINE
   } Transform_state;
 
   // States used in a relaxation passes.
   Transform_state state_;
+  // Used in conjunction with TRAMPOLINE state to
+  // indicate the last phase of the process.
+  bool generating_trampolines_;
+
   // The GOT section.
   Nanomips_output_data_got<size, big_endian>* got_;
   // The .nanoMIPS.stubs section.
@@ -2378,6 +2498,8 @@ class Target_nanomips : public Sized_target<size, big_endian>
   // .nanoMIPS.abiflags section data in output.
   Nanomips_abiflags<big_endian>* abiflags_;
   // Offset of the GOT entry for the TLS module index.
+  // BALC trampolines, used after the relaxation pass.
+  Balc_trampoline_vector balc_trampolines_;
   unsigned int got_mod_index_offset_;
   // Whether there is an input .nanoMIPS.abiflags section.
   bool has_abiflags_section_;
@@ -5063,7 +5185,8 @@ Nanomips_relax_insn<size, big_endian>::type(
     size_t relnum,
     uint32_t insn,
     Address address,
-    Address gp)
+    Address gp,
+    bool has_balc_stub2)
 {
   const Address invalid_address = static_cast<Address>(0) - 1;
   const Nanomips_relobj<size, big_endian>* relobj =
@@ -5226,7 +5349,8 @@ Nanomips_relax_insn_finalize<size, big_endian>::type(
     size_t relnum,
     uint32_t insn,
     Address address,
-    Address gp)
+    Address gp,
+    bool has_balc_stub2)
 {
   Relocatable_relocs* rr = relinfo->rr;
   gold_assert(rr != NULL);
@@ -5237,7 +5361,8 @@ Nanomips_relax_insn_finalize<size, big_endian>::type(
   return Nanomips_relax_insn<size, big_endian>::type(relinfo, target, gsym,
                                                      psymval, insn_property,
                                                      reloc, relnum, insn,
-                                                     address, gp);
+                                                     address, gp,
+                                                     has_balc_stub2);
 }
 
 // Nanomips_expand_insn methods.
@@ -5449,7 +5574,8 @@ Nanomips_expand_insn<size, big_endian>::type(
     size_t,
     uint32_t insn,
     Address address,
-    Address gp)
+    Address gp,
+    bool has_balc_stub2)
 {
   typedef Nanomips_relocate_functions<size, big_endian> Reloc_funcs;
   const Address invalid_address = static_cast<Address>(0) - 1;
@@ -5620,7 +5746,8 @@ Nanomips_expand_insn_finalize<size, big_endian>::type(
     size_t relnum,
     uint32_t insn,
     Address address,
-    Address gp)
+    Address gp,
+    bool has_balc_stub2)
 {
   Nanomips_relobj<size, big_endian>* relobj =
     Nanomips_relobj<size, big_endian>::as_nanomips_relobj(relinfo->object);
@@ -5648,7 +5775,7 @@ Nanomips_expand_insn_finalize<size, big_endian>::type(
     Nanomips_expand_insn<size, big_endian>::type(relinfo, target, gsym,
                                                  psymval, insn_property,
                                                  reloc, relnum, insn,
-                                                 address, gp);
+                                                 address, gp, has_balc_stub2);
   if (type == TT_NONE)
     return TT_NONE;
 
@@ -5673,6 +5800,79 @@ Nanomips_expand_insn_finalize<size, big_endian>::type(
   rr->set_strategy(relnum, strategy);
   rr->increase_output_reloc_count();
   return type;
+}
+
+// Nanomips_trampoline methods.
+
+// Return matching BALC instruction for trampoline if there is one.
+
+template<int size, bool big_endian>
+const Nanomips_insn_property*
+Nanomips_trampoline<size, big_endian>::find_insn(
+    Nanomips_relobj<size, big_endian>*,
+    uint32_t insn,
+    unsigned int mask,
+    unsigned int r_type)
+{
+  switch (r_type)
+    {
+    case elfcpp::R_NANOMIPS_PC25_S1:
+      return nanomips_insn_property_table->get_insn_property(insn, mask,
+                                                             r_type);
+    default:
+      break;
+    }
+  return NULL;
+}
+
+// Return the transformation type if instruction needs to be expanded.
+
+template<int size, bool big_endian>
+unsigned int
+Nanomips_trampoline<size, big_endian>::type(
+    const Relocate_info<size, big_endian>* relinfo,
+    Target_nanomips<size, big_endian>* target,
+    const Symbol* gsym,
+    const Symbol_value<size>* psymval,
+    const Nanomips_insn_property* insn_property,
+    const elfcpp::Rela<size, big_endian>& reloc,
+    size_t,
+    uint32_t insn,
+    Address address,
+    Address gp,
+    bool has_balc_stub2)
+{
+  unsigned int r_type = elfcpp::elf_r_type<size>(reloc.get_r_info());
+
+  if ((r_type != elfcpp::R_NANOMIPS_PC25_S1 || !has_balc_stub2)
+      || (strcmp(insn_property->name().c_str(), "balc") != 0))
+    return TT_NONE;
+
+  if (target->is_generating_trampolines())
+    {
+      auto t = target->find_balc_trampoline(address);
+
+      if (t == nullptr || t->ignore)
+        return TT_NONE;
+      else if (t->is_trampoline)
+        return TT_BALC_TRAMP;
+      else
+        return TT_BALC_CALL;
+    }
+  else
+    {
+      const Nanomips_relobj<size, big_endian>* relobj =
+        Nanomips_relobj<size, big_endian>::as_nanomips_relobj(relinfo->object);
+      typename elfcpp::Elf_types<size>::Elf_Swxword r_addend =
+        reloc.get_r_addend();
+      typedef typename elfcpp::Elf_types<size>::Elf_Swxword Signed_valtype;
+      Valtype value = psymval->value(relobj, r_addend) - 4;
+      // Adjust value if this is a backward branch.
+      if (static_cast<Signed_valtype>(value) < 0)
+        value += 2;
+      target->add_balc_trampoline(address, value);
+      return TT_NONE;
+    }
 }
 
 // Target_nanomips methods.
@@ -5909,7 +6109,8 @@ Target_nanomips<size, big_endian>::do_relax(
   while (1)
     {
       gold_debug(DEBUG_TARGET, "%d pass: %s", pass,
-                 (this->state_ == RELAX ? "Relaxations" : "Expansions"));
+                 (this->state_ == RELAX ? "Relaxations" :
+                  (this->state_ == EXPAND ? "Expansions" : "Trampolines")));
 
       // Scan relocs for instruction transformations.
       for (Input_objects::Relobj_iterator p = input_objects->relobj_begin();
@@ -5929,6 +6130,102 @@ Target_nanomips<size, big_endian>::do_relax(
       // Change the state to EXPAND if we are done with relaxations.
       if (!again && (this->state_ == RELAX) && parameters->options().expand())
         this->state_ = EXPAND;
+      // Change the state to TRAMPOLINE.
+      else if (!again && this->state_ != TRAMPOLINE
+               && parameters->options().relax_balc_trampolines()
+               && !parameters->options().insn32())
+        this->state_ = TRAMPOLINE;
+      else if (this->state_ == TRAMPOLINE
+               && !this->generating_trampolines_)
+        {
+          gold_assert(!again);
+          std::map<Address, size_t> map;
+          std::vector<Balc_trampoline_target> targets;
+
+          std::sort(balc_trampolines_.begin(), balc_trampolines_.end(),
+                    [](Balc_trampoline a, Balc_trampoline b)
+                      {
+                        return a.address < b.address;
+                      }
+          );
+
+          for (size_t i = 0; i < balc_trampolines_.size(); i++)
+            {
+              auto titer = map.find(balc_trampolines_[i].target);
+              bool start_new_area = titer == map.end();
+
+              if (!start_new_area)
+                {
+                  Balc_trampoline_target &t = targets[titer->second];
+                  Address address = balc_trampolines_[i].address;
+                  Address first = balc_trampolines_[t.first].address;
+                  if (t.trampoline == -1ull && (address - 1024 >= first))
+                    if (t.count < 2)
+                      start_new_area = true;
+                    else
+                      t.trampoline = t.last;
+                  else
+                    {
+                      start_new_area = t.trampoline != -1ull &&
+                        (address - 1024 >
+                          balc_trampolines_[t.trampoline].address);
+                    }
+                }
+
+              if (start_new_area)
+                {
+                  Balc_trampoline_target t;
+                  t.first = i;
+                  t.last = i;
+                  t.count = 1;
+                  t.trampoline = -1;
+                  t.target = balc_trampolines_[i].target;
+                  map[balc_trampolines_[i].target] = targets.size();
+                  targets.push_back(t);
+                }
+              else
+                {
+                  Balc_trampoline_target &t = targets[titer->second];
+                  t.count++;
+                  t.last = i;
+                }
+            }
+
+            for (auto &t : targets)
+              {
+                if (t.trampoline == -1ull)
+                  t.trampoline = t.last;
+
+              for (size_t i = t.first; i <= t.last; i++)
+                if (t.target == balc_trampolines_[i].target)
+                  {
+                    balc_trampolines_[i].ignore = t.count < 4;
+                    balc_trampolines_[i].is_trampoline = i == t.trampoline;
+                  }
+              }
+
+            Address delta = static_cast<Address>(0);
+
+            for (auto &t : balc_trampolines_)
+              {
+                t.address = t.address - delta;
+                if (!t.ignore)
+                  delta = delta + (t.is_trampoline ? -4 : 2);
+              }
+
+            for (auto t : targets)
+              for (size_t i = t.first; i <= t.last; i++)
+                if (t.target == balc_trampolines_[i].target
+                    && !balc_trampolines_[i].ignore
+                    && !balc_trampolines_[i].is_trampoline)
+                  balc_trampolines_[i].target =
+                    balc_trampolines_[t.trampoline].address
+                    - balc_trampolines_[i].address + 2;
+
+            this->generating_trampolines_ = true;
+            again = true;
+            break;
+        }
       else
         break;
     }
@@ -6642,6 +6939,15 @@ Target_nanomips<size, big_endian>::do_finalize_sections(
   if (this->stubs_ != NULL)
     this->stubs_->set_lazy_stub_offsets();
 
+  // Define "magic" symbol for balc trampoline generation.
+  symtab->define_as_constant("__reloc_balc_stub_\\2", NULL,
+                             Symbol_table::PREDEFINED,
+                             0, 0,
+                             elfcpp::STT_NOTYPE,
+                             elfcpp::STB_LOCAL,
+                             elfcpp::STV_DEFAULT,
+                             0, false, false);
+
   // Emit any relocs we saved in an attempt to avoid generating COPY
   // relocs.
   if (this->copy_relocs_.any_saved_relocs())
@@ -7184,6 +7490,19 @@ Target_nanomips<size, big_endian>::scan_section_for_transform(
             view_address);
         }
     }
+  else if (this->state_ == TRAMPOLINE)
+    {
+          typedef Nanomips_trampoline<size, big_endian> Tramp;
+          return this->scan_reloc_section_for_transform<Tramp>(
+            relinfo,
+            prelocs,
+            reloc_count,
+            os,
+            input_section,
+            new_relaxed_sections,
+            view,
+            view_address);
+    }
   else
     gold_unreachable();
 
@@ -7374,6 +7693,17 @@ Target_nanomips<size, big_endian>::scan_reloc_section_for_transform(
                                                   i, prelocs))
         continue;
 
+      unsigned int none_sym = has_none_reloc<size, big_endian>(r_offset,
+                                                               reloc_count,
+                                                               i, prelocs);
+      bool has_balc_stub2 = none_sym >= local_count;
+      if (has_balc_stub2)
+        {
+          const Symbol* gsym = relobj->global_symbol(none_sym);
+          gold_assert(gsym != NULL);
+          has_balc_stub2 = strcmp(gsym->name(), "__reloc_balc_stub_\\2") == 0;
+        }
+
       const Symbol* gsym;
       Symbol_value<size> symval;
       const Symbol_value<size>* psymval;
@@ -7487,7 +7817,7 @@ Target_nanomips<size, big_endian>::scan_reloc_section_for_transform(
       Address address = view_address + r_offset;
       unsigned int type = transform.type(relinfo, this, gsym, psymval,
                                          insn_property, reloc, i, insn,
-                                         address, gp);
+                                         address, gp, has_balc_stub2);
       if (type == TT_NONE)
         continue;
 
@@ -8363,12 +8693,20 @@ Target_nanomips<size, big_endian>::Relocate::relocate(
     case elfcpp::R_NANOMIPS_PC32:
       value = psymval->value(object, r_addend) - address;
       break;
+    case elfcpp::R_NANOMIPS_PC10_S1:
+      {
+        auto t = target->find_balc_trampoline(address);
+        if (t != nullptr) {
+          value = t->target;
+          break;
+        }
+      }
+    /* Fall through */
     case elfcpp::R_NANOMIPS_PC_I32:
     case elfcpp::R_NANOMIPS_PC25_S1:
     case elfcpp::R_NANOMIPS_PC21_S1:
     case elfcpp::R_NANOMIPS_PC14_S1:
     case elfcpp::R_NANOMIPS_PC11_S1:
-    case elfcpp::R_NANOMIPS_PC10_S1:
     case elfcpp::R_NANOMIPS_PC7_S1:
     case elfcpp::R_NANOMIPS_PC4_S1:
       {
