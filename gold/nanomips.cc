@@ -193,14 +193,14 @@ is_forced_insn_length(typename elfcpp::Elf_types<size>::Elf_Addr offset,
   return false;
 }
 
-// Sym number associated with R_NANOMIPS_NONE relocation.
-// 0 If none.
+// Return true if it has R_NANOMIPS_NOTRAMP relocation,
+// false otherwise.
 template<int size, bool big_endian>
-static inline unsigned int
-has_none_reloc(typename elfcpp::Elf_types<size>::Elf_Addr offset,
-                        size_t reloc_count,
-                        size_t relnum,
-                        const unsigned char* preloc)
+static inline bool
+has_notramp_reloc(typename elfcpp::Elf_types<size>::Elf_Addr offset,
+                  size_t reloc_count,
+                  size_t relnum,
+                  const unsigned char* preloc)
 {
   typedef typename elfcpp::Rela<size, big_endian> Reltype;
   const int reloc_size = elfcpp::Elf_sizes<size>::rela_size;
@@ -213,10 +213,10 @@ has_none_reloc(typename elfcpp::Elf_types<size>::Elf_Addr offset,
         break;
 
       unsigned int r_type = elfcpp::elf_r_type<size>(reloc.get_r_info());
-      if (r_type == elfcpp::R_NANOMIPS_NONE)
-        return elfcpp::elf_r_sym<size>(reloc.get_r_info());
+      if (r_type == elfcpp::R_NANOMIPS_NOTRAMP)
+        return true;
     }
-  return 0;
+  return false;
 }
 
 // Return the GOT offset of the local symbol.  If the symbol does not have
@@ -6939,15 +6939,6 @@ Target_nanomips<size, big_endian>::do_finalize_sections(
   if (this->stubs_ != NULL)
     this->stubs_->set_lazy_stub_offsets();
 
-  // Define "magic" symbol for balc trampoline generation.
-  symtab->define_as_constant("__reloc_balc_stub_\\2", NULL,
-                             Symbol_table::PREDEFINED,
-                             0, 0,
-                             elfcpp::STT_NOTYPE,
-                             elfcpp::STB_LOCAL,
-                             elfcpp::STV_DEFAULT,
-                             0, false, false);
-
   // Emit any relocs we saved in an attempt to avoid generating COPY
   // relocs.
   if (this->copy_relocs_.any_saved_relocs())
@@ -7693,16 +7684,9 @@ Target_nanomips<size, big_endian>::scan_reloc_section_for_transform(
                                                   i, prelocs))
         continue;
 
-      unsigned int none_sym = has_none_reloc<size, big_endian>(r_offset,
-                                                               reloc_count,
-                                                               i, prelocs);
-      bool has_balc_stub2 = none_sym >= local_count;
-      if (has_balc_stub2)
-        {
-          const Symbol* gsym = relobj->global_symbol(none_sym);
-          gold_assert(gsym != NULL);
-          has_balc_stub2 = strcmp(gsym->name(), "__reloc_balc_stub_\\2") == 0;
-        }
+      unsigned int notramp_reloc =
+        has_notramp_reloc<size, big_endian>(r_offset, reloc_count, i, prelocs);
+      bool has_balc_stub2 = notramp_reloc == false;
 
       const Symbol* gsym;
       Symbol_value<size> symval;
@@ -8625,6 +8609,7 @@ Target_nanomips<size, big_endian>::Relocate::relocate(
   switch (r_type)
     {
     case elfcpp::R_NANOMIPS_NONE:
+    case elfcpp::R_NANOMIPS_NOTRAMP:
     case elfcpp::R_NANOMIPS_JALR32:
     case elfcpp::R_NANOMIPS_JALR16:
       break;
@@ -8749,6 +8734,7 @@ Target_nanomips<size, big_endian>::Relocate::relocate(
   switch (r_type)
     {
     case elfcpp::R_NANOMIPS_NONE:
+    case elfcpp::R_NANOMIPS_NOTRAMP:
     case elfcpp::R_NANOMIPS_JALR32:
     case elfcpp::R_NANOMIPS_JALR16:
       break;
