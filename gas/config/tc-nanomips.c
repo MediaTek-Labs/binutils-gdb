@@ -3089,6 +3089,7 @@ linkrelax_reloc_p (bfd_reloc_code_real_type reloc)
     case BFD_RELOC_NANOMIPS_FIXED:
     case BFD_RELOC_NANOMIPS_RELAX:
     case BFD_RELOC_NANOMIPS_NORELAX:
+    case BFD_RELOC_NANOMIPS_NOTRAMP:
       return TRUE;
     default:
       return FALSE;
@@ -5389,6 +5390,7 @@ static const struct
   { BFD_RELOC_NANOMIPS_NORELAX, 	0, 0, 0, 0 },
   { BFD_RELOC_NANOMIPS_SAVERESTORE,	0, 0, 0, 4 },
   { BFD_RELOC_NANOMIPS_JUMPTABLE_LOAD,	0, 0, 0, 0 },
+  { BFD_RELOC_NANOMIPS_NOTRAMP,		0, 0, 0, 0 },
   { BFD_RELOC_NONE,			32, 32, 32, 4 }  /* Fall-back maximum  */
 };
 

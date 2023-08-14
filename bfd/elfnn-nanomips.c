@@ -878,8 +878,21 @@ static reloc_howto_type elfNN_nanomips_howto_table_rela[] = {
 	 0,			/* dst_mask */
 	 FALSE),		/* pcrel_offset */
 
+  /* Place-holder to inhibit balc stub optimization.  */
+  HOWTO (R_NANOMIPS_NOTRAMP,	/* type */
+	 0,			/* rightshift */
+	 0,			/* size (0 = byte, 1 = short, 2 = long) */
+	 0,			/* bitsize */
+	 FALSE,			/* pc_relative */
+	 0,			/* bitpos */
+	 complain_overflow_dont, /* complain_on_overflow */
+	 bfd_elf_generic_reloc,	/* special handler.  */
+	 "R_NANOMIPS_NOTRAMP",	/* name */
+	 FALSE,			/* partial_inplace */
+	 0,			/* src_mask */
+	 0,			/* dst_mask */
+	 FALSE),		/* pcrel_offset */
 
-  EMPTY_HOWTO (77),
   EMPTY_HOWTO (78),
   EMPTY_HOWTO (79),
 
@@ -1233,6 +1246,7 @@ static const struct elf_reloc_map nanomips_reloc_map[] = {
   { BFD_RELOC_NANOMIPS_JALR32, R_NANOMIPS_JALR32 },
   { BFD_RELOC_NANOMIPS_JALR16, R_NANOMIPS_JALR16 },
   { BFD_RELOC_NANOMIPS_JUMPTABLE_LOAD, R_NANOMIPS_JUMPTABLE_LOAD },
+  { BFD_RELOC_NANOMIPS_NOTRAMP, R_NANOMIPS_NOTRAMP },
 
   { BFD_RELOC_NANOMIPS_TLS_GD, R_NANOMIPS_TLS_GD },
   { BFD_RELOC_NANOMIPS_TLS_GD_I32, R_NANOMIPS_TLS_GD_I32 },
