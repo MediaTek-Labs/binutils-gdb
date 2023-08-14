@@ -6160,10 +6160,12 @@ Target_nanomips<size, big_endian>::do_relax(
                   Address address = balc_trampolines_[i].address;
                   Address first = balc_trampolines_[t.first].address;
                   if (t.trampoline == -1ull && (address - 1024 >= first))
-                    if (t.count < 2)
-                      start_new_area = true;
-                    else
-                      t.trampoline = t.last;
+                    {
+                      if (t.count < 2)
+                        start_new_area = true;
+                      else
+                        t.trampoline = t.last;
+                    }
                   else
                     {
                       start_new_area = t.trampoline != -1ull &&
