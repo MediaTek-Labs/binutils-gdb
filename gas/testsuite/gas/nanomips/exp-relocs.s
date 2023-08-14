@@ -53,6 +53,8 @@ test:
 1:	bc end
 	.reloc	1f,R_NANOMIPS_FIXED,foo
 1:	beqc $a3, $a4, end
+	.reloc	1f,R_NANOMIPS_NOTRAMP
+1:	balc foo
 end:
 
 	addiu.w	$a0,$gp,%tlsgd(tlsvar)
