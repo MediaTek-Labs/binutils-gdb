@@ -1473,7 +1473,7 @@ print_value (bfd *abfd ATTRIBUTE_UNUSED, bfd_vma val)
   switch (print_width)
     {
     case 32:
-      printf (value_format_32bit, (unsigned long) val);
+      printf (value_format_32bit, (unsigned long) val & 0xffffffff);
       break;
 
     case 64:
