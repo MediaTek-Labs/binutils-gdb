@@ -1951,7 +1951,8 @@ class Target_nanomips : public Sized_target<size, big_endian>
       generating_trampolines_(false), got_(NULL), stubs_(NULL),
       rel_dyn_(NULL), copy_relocs_(elfcpp::R_NANOMIPS_COPY),
       gp_(NULL), attributes_section_data_(NULL), abiflags_(NULL),
-      got_mod_index_offset_(-1U), has_abiflags_section_(false)
+      got_mod_index_offset_(-1U), has_abiflags_section_(false),
+      done_with_trampolines_(false)
   { }
 
   // Make a new symbol table entry for the Nanomips target.
@@ -2503,6 +2504,9 @@ class Target_nanomips : public Sized_target<size, big_endian>
   unsigned int got_mod_index_offset_;
   // Whether there is an input .nanoMIPS.abiflags section.
   bool has_abiflags_section_;
+  // Indicates that we are done with production of trampolines so we can do
+  // a final expand.
+  bool done_with_trampolines_;
 };
 
 template<int size, bool big_endian>
@@ -6132,11 +6136,13 @@ Target_nanomips<size, big_endian>::do_relax(
         this->state_ = EXPAND;
       // Change the state to TRAMPOLINE.
       else if (!again && this->state_ != TRAMPOLINE
+               && !this->done_with_trampolines_
                && parameters->options().relax_balc_trampolines()
                && !parameters->options().insn32())
         this->state_ = TRAMPOLINE;
       else if (this->state_ == TRAMPOLINE
-               && !this->generating_trampolines_)
+               && !this->generating_trampolines_
+               && !this->done_with_trampolines_)
         {
           gold_assert(!again);
           std::map<Address, size_t> map;
@@ -6226,7 +6232,16 @@ Target_nanomips<size, big_endian>::do_relax(
 
             this->generating_trampolines_ = true;
             again = true;
+
             break;
+        }
+      else if (this->state_ == TRAMPOLINE &&
+               !again && this->generating_trampolines_ == true)
+        {
+          this->state_ = EXPAND;
+          this->done_with_trampolines_ = true;
+          this->generating_trampolines_ = false;
+          again = true;
         }
       else
         break;
@@ -8682,10 +8697,12 @@ Target_nanomips<size, big_endian>::Relocate::relocate(
       break;
     case elfcpp::R_NANOMIPS_PC10_S1:
       {
-        auto t = target->find_balc_trampoline(address);
-        if (t != nullptr) {
-          value = t->target;
-          break;
+        if (target->is_generating_trampolines()) {
+          auto t = target->find_balc_trampoline(address);
+          if (t != nullptr) {
+            value = t->target;
+            break;
+          }
         }
       }
     /* Fall through */
