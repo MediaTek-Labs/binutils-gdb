@@ -5190,7 +5190,7 @@ Nanomips_relax_insn<size, big_endian>::type(
     uint32_t insn,
     Address address,
     Address gp,
-    bool has_balc_stub2)
+    bool)
 {
   const Address invalid_address = static_cast<Address>(0) - 1;
   const Nanomips_relobj<size, big_endian>* relobj =
@@ -5579,7 +5579,7 @@ Nanomips_expand_insn<size, big_endian>::type(
     uint32_t insn,
     Address address,
     Address gp,
-    bool has_balc_stub2)
+    bool)
 {
   typedef Nanomips_relocate_functions<size, big_endian> Reloc_funcs;
   const Address invalid_address = static_cast<Address>(0) - 1;
@@ -5836,14 +5836,14 @@ unsigned int
 Nanomips_trampoline<size, big_endian>::type(
     const Relocate_info<size, big_endian>* relinfo,
     Target_nanomips<size, big_endian>* target,
-    const Symbol* gsym,
+    const Symbol*,
     const Symbol_value<size>* psymval,
     const Nanomips_insn_property* insn_property,
     const elfcpp::Rela<size, big_endian>& reloc,
     size_t,
-    uint32_t insn,
+    uint32_t,
     Address address,
-    Address gp,
+    Address,
     bool has_balc_stub2)
 {
   unsigned int r_type = elfcpp::elf_r_type<size>(reloc.get_r_info());
