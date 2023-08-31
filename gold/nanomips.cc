@@ -1535,6 +1535,7 @@ class Nanomips_transformations
   // Transform instruction.
   inline void
   transform(const Relocate_info<size, big_endian>* relinfo,
+            Target_nanomips<size, big_endian>* target,
             const Nanomips_transform_template* transform_template,
             const Nanomips_insn_property* insn_property,
             Nanomips_input_section* input_section,
@@ -4669,6 +4670,7 @@ template<int size, bool big_endian>
 inline void
 Nanomips_transformations<size, big_endian>::transform(
     const Relocate_info<size, big_endian>* relinfo,
+    Target_nanomips<size, big_endian>* target,
     const Nanomips_transform_template* transform_template,
     const Nanomips_insn_property* insn_property,
     Nanomips_input_section* input_section,
@@ -4853,6 +4855,19 @@ Nanomips_transformations<size, big_endian>::transform(
 
           // For 48-bit instructions, r_offset is pointing to the immediate.
           Address new_r_offset = (new_insn_size == 6 ? offset + 2 : offset);
+
+          if (type == TT_BALC_CALL)
+          {
+            gold_assert(new_r_type == elfcpp::R_NANOMIPS_PC10_S1);
+            Address address = input_section->address() + new_r_offset;
+            auto t = target->find_balc_trampoline(address);
+            if (t != nullptr)
+            {
+              r_sym = 0;
+              r_addend = t->target;
+            }
+          }
+
           if (!new_reloc)
             {
               // Change existing relocation, and set that we
@@ -4860,6 +4875,7 @@ Nanomips_transformations<size, big_endian>::transform(
               reloc_write.put_r_info(
                 elfcpp::elf_r_info<size>(r_sym, new_r_type));
               reloc_write.put_r_offset(new_r_offset);
+              reloc_write.put_r_addend(r_addend);
               new_reloc = true;
             }
           else
@@ -6139,7 +6155,10 @@ Target_nanomips<size, big_endian>::do_relax(
                && !this->done_with_trampolines_
                && parameters->options().relax_balc_trampolines()
                && !parameters->options().insn32())
-        this->state_ = TRAMPOLINE;
+        {
+          this->state_ = TRAMPOLINE;
+          balc_trampolines_.clear();
+        }
       else if (this->state_ == TRAMPOLINE
                && !this->generating_trampolines_
                && !this->done_with_trampolines_)
@@ -6227,8 +6246,7 @@ Target_nanomips<size, big_endian>::do_relax(
                     && !balc_trampolines_[i].ignore
                     && !balc_trampolines_[i].is_trampoline)
                   balc_trampolines_[i].target =
-                    balc_trampolines_[t.trampoline].address
-                    - balc_trampolines_[i].address + 2;
+                    balc_trampolines_[t.trampoline].address + 4;
 
             this->generating_trampolines_ = true;
             again = true;
@@ -6236,7 +6254,8 @@ Target_nanomips<size, big_endian>::do_relax(
             break;
         }
       else if (this->state_ == TRAMPOLINE &&
-               !again && this->generating_trampolines_ == true)
+               !again && this->generating_trampolines_ &&
+               parameters->options().expand())
         {
           this->state_ = EXPAND;
           this->done_with_trampolines_ = true;
@@ -7853,7 +7872,7 @@ Target_nanomips<size, big_endian>::scan_reloc_section_for_transform(
         }
 
       // Transform instruction.
-      transform.transform(relinfo, transform_template, insn_property,
+      transform.transform(relinfo, this, transform_template, insn_property,
                           input_section, type, i, insn);
 
       if (is_debugging_enabled(DEBUG_TARGET))
@@ -8695,22 +8714,12 @@ Target_nanomips<size, big_endian>::Relocate::relocate(
     case elfcpp::R_NANOMIPS_PC32:
       value = psymval->value(object, r_addend) - address;
       break;
-    case elfcpp::R_NANOMIPS_PC10_S1:
-      {
-        if (target->is_generating_trampolines()) {
-          auto t = target->find_balc_trampoline(address);
-          if (t != nullptr) {
-            value = t->target;
-            break;
-          }
-        }
-      }
-    /* Fall through */
     case elfcpp::R_NANOMIPS_PC_I32:
     case elfcpp::R_NANOMIPS_PC25_S1:
     case elfcpp::R_NANOMIPS_PC21_S1:
     case elfcpp::R_NANOMIPS_PC14_S1:
     case elfcpp::R_NANOMIPS_PC11_S1:
+    case elfcpp::R_NANOMIPS_PC10_S1:
     case elfcpp::R_NANOMIPS_PC7_S1:
     case elfcpp::R_NANOMIPS_PC4_S1:
       {
