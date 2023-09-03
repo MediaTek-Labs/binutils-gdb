@@ -1948,9 +1948,8 @@ class Target_nanomips : public Sized_target<size, big_endian>
 
  public:
   Target_nanomips(const Target::Target_info* info = &nanomips_info)
-    : Sized_target<size, big_endian>(info), state_(NO_TRANSFORM),
-      generating_trampolines_(false), got_(NULL), stubs_(NULL),
-      rel_dyn_(NULL), copy_relocs_(elfcpp::R_NANOMIPS_COPY),
+    : Sized_target<size, big_endian>(info), state_(NO_TRANSFORM), got_(NULL),
+      stubs_(NULL), rel_dyn_(NULL), copy_relocs_(elfcpp::R_NANOMIPS_COPY),
       gp_(NULL), attributes_section_data_(NULL), abiflags_(NULL),
       got_mod_index_offset_(-1U), has_abiflags_section_(false),
       done_with_trampolines_(false)
@@ -1967,7 +1966,7 @@ class Target_nanomips : public Sized_target<size, big_endian>
   { balc_trampolines_.clear(); }
 
   inline bool is_generating_trampolines() const
-  { return generating_trampolines_; }
+  { return state_ == TRAMPOLINE_B; }
 
   // Add BALC trampoline
   void
@@ -2476,14 +2475,12 @@ class Target_nanomips : public Sized_target<size, big_endian>
     EXPAND,
     // Instruction relaxation state.
     RELAX,
-    TRAMPOLINE
+    TRAMPOLINE_A, // Collecting info.
+    TRAMPOLINE_B, // Generating trampolines.
   } Transform_state;
 
   // States used in a relaxation passes.
   Transform_state state_;
-  // Used in conjunction with TRAMPOLINE state to
-  // indicate the last phase of the process.
-  bool generating_trampolines_;
 
   // The GOT section.
   Nanomips_output_data_got<size, big_endian>* got_;
@@ -6131,7 +6128,6 @@ Target_nanomips<size, big_endian>::do_relax(
       gold_debug(DEBUG_TARGET, "%d pass: %s", pass,
                  (this->state_ == RELAX ? "Relaxations" :
                   (this->state_ == EXPAND ? "Expansions" : "Trampolines")));
-
       // Scan relocs for instruction transformations.
       for (Input_objects::Relobj_iterator p = input_objects->relobj_begin();
            p != input_objects->relobj_end();
@@ -6150,17 +6146,31 @@ Target_nanomips<size, big_endian>::do_relax(
       // Change the state to EXPAND if we are done with relaxations.
       if (!again && (this->state_ == RELAX) && parameters->options().expand())
         this->state_ = EXPAND;
+      // Reset trampoline substate.
+      else if (this->state_ == TRAMPOLINE_B)
+        {
+          balc_trampolines_.clear();
+
+          if (!again && parameters->options().expand())
+          {
+            this->state_ = EXPAND;
+            this->done_with_trampolines_ = true;
+          }
+          else
+          {
+            this->state_ = TRAMPOLINE_A;
+            break;
+          }
+        }
       // Change the state to TRAMPOLINE.
-      else if (!again && this->state_ != TRAMPOLINE
+      else if (!again && (this->state_ == EXPAND || this->state_ == RELAX)
                && !this->done_with_trampolines_
                && parameters->options().relax_balc_trampolines()
                && !parameters->options().insn32())
         {
-          this->state_ = TRAMPOLINE;
-          balc_trampolines_.clear();
+          this->state_ = TRAMPOLINE_A;
         }
-      else if (this->state_ == TRAMPOLINE
-               && !this->generating_trampolines_
+      else if (this->state_ == TRAMPOLINE_A
                && !this->done_with_trampolines_)
         {
           gold_assert(!again);
@@ -6248,19 +6258,7 @@ Target_nanomips<size, big_endian>::do_relax(
                   balc_trampolines_[i].target =
                     balc_trampolines_[t.trampoline].address + 4;
 
-            this->generating_trampolines_ = true;
-            again = true;
-
-            break;
-        }
-      else if (this->state_ == TRAMPOLINE &&
-               !again && this->generating_trampolines_ &&
-               parameters->options().expand())
-        {
-          this->state_ = EXPAND;
-          this->done_with_trampolines_ = true;
-          this->generating_trampolines_ = false;
-          again = true;
+            this->state_ = TRAMPOLINE_B;
         }
       else
         break;
@@ -7517,7 +7515,8 @@ Target_nanomips<size, big_endian>::scan_section_for_transform(
             view_address);
         }
     }
-  else if (this->state_ == TRAMPOLINE)
+  else if (this->state_ == TRAMPOLINE_A ||
+           this->state_ == TRAMPOLINE_B)
     {
           typedef Nanomips_trampoline<size, big_endian> Tramp;
           return this->scan_reloc_section_for_transform<Tramp>(
