@@ -880,6 +880,10 @@ class General_options
 	      N_("(nanoMIPS only) Do not finalize relocations in "
 		"relocatable output"));
 
+  DEFINE_bool(fix_nmips_hw110880, options::TWO_DASHES, '\0', false,
+	      N_("(nanoMIPS only) Rewrite instructions to avoid hw110880 issue"),
+	      N_("(nanoMIPS only) Do not rewrite instructions to avoid hw110880 issue"));
+
   DEFINE_string(filter, options::TWO_DASHES, 'F', NULL,
 		N_("Filter for shared object symbol table"),
 		N_("SHLIB"));

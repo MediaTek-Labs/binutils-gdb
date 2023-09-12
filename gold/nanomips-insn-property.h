@@ -75,7 +75,9 @@ enum Transform_type
   // Transform to 16-bit save/restore.jrc instruction.
   TT_SAVERESTORE16,
   // Transform to 16-bit bxxzc instruction.
-  TT_PCREL16_ZERO
+  TT_PCREL16_ZERO,
+  // Transform to avoid hw110880 issue
+  TT_IMM48_FIX,
 };
 
 // The Nanomips_insn_template class is to store information about a
