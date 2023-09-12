@@ -68,7 +68,7 @@
 // addiugp[48] $reg, %gprel32(sym)
 #define ADDIUGP48(reloc, tregmap) NIT48("addiugp[48]", 0x6002, reloc, INS_REG(5, 5, tregmap))
 // lapc[48] $reg, sym
-#define LAPC48 NIT48("lapc[48]", 0x6003, PC_I32, INS_REG(5, 5, TREG))
+#define LAPC48(tregmap) NIT48("lapc[48]", 0x6003, PC_I32, INS_REG(5, 5, tregmap))
 // li[48] $reg, sym
 #define LI48 NIT48("li[48]", 0x6000, I32, INS_REG(5, 5, TREG))
 // lwpc[48] $reg, %reloc(sym)
@@ -80,7 +80,9 @@
 // addiu[gp.w] $reg, $gp, %gprel(sym)
 #define ADDIUGPW32 NIT32("addiu[gp.w]", 0x40000000, GPREL19_S2, INS_REG(21, 5, TREG), NULL)
 // addu $reg, $reg, $gp
-#define ADDU32(tregmap, sregmap) NIT32("addu", 0x23800150, NONE, INS_REG(16, 5, tregmap), INS_REG(11, 5, sregmap))
+#define ADDUGP32(tregmap, sregmap) NIT32("addu", 0x23800150, NONE, INS_REG(16, 5, tregmap), INS_REG(11, 5, sregmap))
+// addu $reg, $reg
+#define ADDU32(tregmap, sregmap) NIT32("addu", 0x20000150, NONE, INS_REG(11, 10, tregmap), INS_REG(21, 5, sregmap))
 // aluipc $reg, %reloc(sym)
 #define ALUIPC32(reloc, tregmap) NIT32("aluipc", 0xe0000002, reloc, INS_REG(21, 5, tregmap), NULL)
 // balc sym
@@ -222,6 +224,19 @@ NTT(GPREL32_WORD,      RELS(R(GPREL_I32)),                            INSNS(ADDI
 // lapc[48] $reg, sym
 NIP48("lapc[48]",       0x6003,        EXT_REG(5, 5))
 NTT(PCREL32,           RELS(R(PC_I32)),                               INSNS(LAPC32(TREG)))
+NTT(IMM48_FIX,         RELS(R(PC_I32)),                               INSNS(ALUIPC32(PC_HI20, TREG), ORI32(LO12, TREG, TREG)))
+
+// li[48] $reg, sym
+NIP48("li[48]",         0x6000,        EXT_REG(5, 5))
+NTT(IMM48_FIX,         RELS(R(I32)),                                  INSNS(LAPC48(TREG)))
+
+// addiu[48] $reg, sym
+NIP48("addiu[48]",      0x6001,        EXT_REG(5, 5))
+NTT(IMM48_FIX,         RELS(R(I32)),                                  INSNS(LAPC48(SREG), ADDU32(TREG, SREG)))
+
+// lapc[48] $reg, sym
+NIP48("swpc[48]",       0x600f,        EXT_REG(5, 5))
+NTT(IMM48_FIX,         RELS(R(PC_I32)),                               INSNS(ALUIPC32(PC_HI20, SREG), SW32(LO12)))
 
 
 // Transformations for 32-bit instructions.
@@ -232,7 +247,7 @@ NTT(ABS_NMF,          RELS(R(PC25_S1)),                               INSNS(LI48
 NTT(ABS16_LONG,       RELS(R(PC25_S1)),                               INSNS(LUI32(HI20, SREG), ORI32(LO12, SREG, SREG), JALRC16(SREG)))
 NTT(ABS32_LONG,       RELS(R(PC25_S1)),                               INSNS(LUI32(HI20, SREG), ORI32(LO12, SREG, SREG), JALRC32))
 NTT(PCREL16,          RELS(R(PC25_S1)),                               INSNS(BALC16))
-NTT(PCREL_NMF,        RELS(R(PC25_S1)),                               INSNS(LAPC48, JALRC16(SREG)))
+NTT(PCREL_NMF,        RELS(R(PC25_S1)),                               INSNS(LAPC48(TREG), JALRC16(SREG)))
 NTT(PCREL16_LONG,     RELS(R(PC25_S1)),                               INSNS(ALUIPC32(PC_HI20, SREG), ORI32(LO12, SREG, SREG), JALRC16(SREG)))
 NTT(PCREL32_LONG,     RELS(R(PC25_S1)),                               INSNS(ALUIPC32(PC_HI20, SREG), ORI32(LO12, SREG, SREG), JALRC32))
 
@@ -242,7 +257,7 @@ NTT(ABS_NMF,          RELS(R(PC25_S1)),                               INSNS(LI48
 NTT(ABS16_LONG,       RELS(R(PC25_S1)),                               INSNS(LUI32(HI20, SREG), ORI32(LO12, SREG, SREG), JRC16))
 NTT(ABS32_LONG,       RELS(R(PC25_S1)),                               INSNS(LUI32(HI20, SREG), ORI32(LO12, SREG, SREG), JRC32))
 NTT(PCREL16,          RELS(R(PC25_S1)),                               INSNS(BC16))
-NTT(PCREL_NMF,        RELS(R(PC25_S1)),                               INSNS(LAPC48, JRC16))
+NTT(PCREL_NMF,        RELS(R(PC25_S1)),                               INSNS(LAPC48(TREG), JRC16))
 NTT(PCREL16_LONG,     RELS(R(PC25_S1)),                               INSNS(ALUIPC32(PC_HI20, SREG), ORI32(LO12, SREG, SREG), JRC16))
 NTT(PCREL32_LONG,     RELS(R(PC25_S1)),                               INSNS(ALUIPC32(PC_HI20, SREG), ORI32(LO12, SREG, SREG), JRC32))
 
@@ -251,7 +266,7 @@ NIP32("lapc",           0x04000000,    EXT_REG(21, 5),       NULL,              
 NTT(DISCARD,          RELS(R(PC21_S1)),                               INSNS())
 NTT(ABS_NMF,          RELS(R(PC21_S1)),                               INSNS(LI48))
 NTT(ABS32_LONG,       RELS(R(PC21_S1)),                               INSNS(LUI32(HI20, TREG), ORI32(LO12, TREG, TREG)))
-NTT(PCREL_NMF,        RELS(R(PC21_S1)),                               INSNS(LAPC48))
+NTT(PCREL_NMF,        RELS(R(PC21_S1)),                               INSNS(LAPC48(TREG)))
 NTT(PCREL32_LONG,     RELS(R(PC21_S1)),                               INSNS(ALUIPC32(PC_HI20, TREG), ORI32(LO12, TREG, TREG)))
 
 // move.balc $reg, $reg, sym
@@ -325,16 +340,16 @@ NTT(PCREL_NMF,        RELS(R(GPREL19_S2)),                            INSNS(LWPC
 NTT(PCREL32_LONG,     RELS(R(GPREL19_S2)),                            INSNS(ALUIPC32(PC_HI20, SREG), LW32(LO12)))
 NTT(GPREL16,          RELS(R(GPREL19_S2)),                            INSNS(LWGP16))
 NTT(GPREL32_NMF,      RELS(R(GPREL19_S2)),                            INSNS(ADDIUGP48(GPREL_I32, SREG), LW32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GPREL19_S2)),                            INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), LW32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GPREL19_S2)),                            INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), LW32(GPREL_LO12)))
 NTT(ABS_NMF,          RELS(R(GOT_DISP)),                              INSNS(LI48))
 NTT(ABS32_LONG,       RELS(R(GOT_DISP)),                              INSNS(LUI32(HI20, TREG), ORI32(LO12, TREG, TREG)))
 NTT(PCREL32,          RELS(R(GOT_DISP)),                              INSNS(LAPC32(SREG)))
-NTT(PCREL_NMF,        RELS(R(GOT_DISP)),                              INSNS(LAPC48))
+NTT(PCREL_NMF,        RELS(R(GOT_DISP)),                              INSNS(LAPC48(TREG)))
 NTT(PCREL32_LONG,     RELS(R(GOT_DISP)),                              INSNS(ALUIPC32(PC_HI20, TREG), ORI32(LO12, TREG, TREG)))
 NTT(GPREL32,          RELS(R(GOT_DISP)),                              INSNS(ADDIUGPB32))
 NTT(GPREL32_WORD,     RELS(R(GOT_DISP)),                              INSNS(ADDIUGPW32))
 NTT(GPREL_NMF,        RELS(R(GOT_DISP)),                              INSNS(ADDIUGP48(GPREL_I32, TREG)))
-NTT(GPREL_LONG,       RELS(R(GOT_DISP)),                              INSNS(LUI32(GPREL_HI20, SREG), ORI32(GPREL_LO12, SREG, SREG), ADDU32(SREG, TREG)))
+NTT(GPREL_LONG,       RELS(R(GOT_DISP)),                              INSNS(LUI32(GPREL_HI20, SREG), ORI32(GPREL_LO12, SREG, SREG), ADDUGP32(SREG, TREG)))
 NTT(GOTPCREL_NMF,     RELS(R(TLS_GOTTPREL)),                          INSNS(LWPC48(TLS_GOTTPREL_PC_I32)))
 NTT(DISCARD,          RELS(R(GOT_CALL), R(GOT_PAGE)),                 INSNS())
 NTT(GOTPCREL_NMF,     RELS(R(GOT_DISP), R(GOT_CALL), R(GOT_PAGE)),    INSNS(LWPC48(GOTPC_I32)))
@@ -347,14 +362,14 @@ NTT(PCREL_NMF,        RELS(R(GPREL19_S2)),                            INSNS(SWPC
 NTT(PCREL32_LONG,     RELS(R(GPREL19_S2)),                            INSNS(ALUIPC32(PC_HI20, SREG), SW32(LO12)))
 NTT(GPREL16,          RELS(R(GPREL19_S2)),                            INSNS(SWGP16))
 NTT(GPREL32_NMF,      RELS(R(GPREL19_S2)),                            INSNS(ADDIUGP48(GPREL_I32, SREG), SW32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GPREL19_S2)),                            INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), SW32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GPREL19_S2)),                            INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), SW32(GPREL_LO12)))
 
 // addiu[gp.w] $reg, $gp, %reloc(sym)
 NIP32("addiu[gp.w]",    0x40000000,    EXT_REG(21, 5),       NULL,                  NULL,                 NULL)
 NTT(ABS32_LONG,       RELS(R(GPREL19_S2)),                            INSNS(LUI32(HI20, SREG), ORI32(LO12, TREG, SREG)))
 NTT(PCREL32_LONG,     RELS(R(GPREL19_S2)),                            INSNS(ALUIPC32(PC_HI20, SREG), ORI32(LO12, TREG, SREG)))
 NTT(GPREL_NMF,        RELS(R(GPREL19_S2)),                            INSNS(ADDIUGP48(GPREL_I32, TREG)))
-NTT(GPREL_LONG,       RELS(R(GPREL19_S2)),                            INSNS(LUI32(GPREL_HI20, SREG), ORI32(GPREL_LO12, SREG, SREG), ADDU32(SREG, TREG)))
+NTT(GPREL_LONG,       RELS(R(GPREL19_S2)),                            INSNS(LUI32(GPREL_HI20, SREG), ORI32(GPREL_LO12, SREG, SREG), ADDUGP32(SREG, TREG)))
 NTT(GPREL_NMF,        RELS(R(TLS_GD)),                                INSNS(ADDIUGP48(TLS_GD_I32, TREG)))
 NTT(GPREL_NMF,        RELS(R(TLS_LD)),                                INSNS(ADDIUGP48(TLS_LD_I32, TREG)))
 
@@ -363,49 +378,49 @@ NIP32("addiu[gp.b]",    0x440c0000,    EXT_REG(21, 5),       NULL,              
 NTT(ABS32_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(HI20, SREG), ORI32(LO12, TREG, SREG)))
 NTT(PCREL32_LONG,     RELS(R(GPREL18)),                               INSNS(ALUIPC32(PC_HI20, SREG), ORI32(LO12, TREG, SREG)))
 NTT(GPREL_NMF,        RELS(R(GPREL18)),                               INSNS(ADDIUGP48(GPREL_I32, TREG)))
-NTT(GPREL_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(GPREL_HI20, SREG), ORI32(GPREL_LO12, SREG, SREG), ADDU32(SREG, TREG)))
+NTT(GPREL_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(GPREL_HI20, SREG), ORI32(GPREL_LO12, SREG, SREG), ADDUGP32(SREG, TREG)))
 
 // lb $reg, %gprel(sym)($gp)
 NIP32("lb[gp]",         0x44000000,    EXT_REG(21, 5),       NULL,                  NULL,                 NULL)
 NTT(ABS32_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(HI20, SREG), LB32(LO12)))
 NTT(PCREL32_LONG,     RELS(R(GPREL18)),                               INSNS(ALUIPC32(PC_HI20, SREG), LB32(LO12)))
 NTT(GPREL32_NMF,      RELS(R(GPREL18)),                               INSNS(ADDIUGP48(GPREL_I32, SREG), LB32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), LB32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), LB32(GPREL_LO12)))
 
 // lbu $reg, %gprel(sym)($gp)
 NIP32("lbu[gp]",        0x44080000,    EXT_REG(21, 5),       NULL,                  NULL,                 NULL)
 NTT(ABS32_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(HI20, SREG), LBU32(LO12)))
 NTT(PCREL32_LONG,     RELS(R(GPREL18)),                               INSNS(ALUIPC32(PC_HI20, SREG), LBU32(LO12)))
 NTT(GPREL32_NMF,      RELS(R(GPREL18)),                               INSNS(ADDIUGP48(GPREL_I32, SREG), LBU32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), LBU32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), LBU32(GPREL_LO12)))
 
 // sb $reg, %gprel(sym)($gp)
 NIP32("sb[gp]",         0x44040000,    EXT_REG(21, 5),       NULL,                  NULL,                 NULL)
 NTT(ABS32_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(HI20, SREG), SB32(LO12)))
 NTT(PCREL32_LONG,     RELS(R(GPREL18)),                               INSNS(ALUIPC32(PC_HI20, SREG), SB32(LO12)))
 NTT(GPREL32_NMF,      RELS(R(GPREL18)),                               INSNS(ADDIUGP48(GPREL_I32, SREG), SB32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), SB32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GPREL18)),                               INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), SB32(GPREL_LO12)))
 
 // lh $reg, %gprel(sym)($gp)
 NIP32("lh[gp]",         0x44100000,    EXT_REG(21, 5),       NULL,                  NULL,                 NULL)
 NTT(ABS32_LONG,       RELS(R(GPREL17_S1)),                            INSNS(LUI32(HI20, SREG), LH32(LO12)))
 NTT(PCREL32_LONG,     RELS(R(GPREL17_S1)),                            INSNS(ALUIPC32(PC_HI20, SREG), LH32(LO12)))
 NTT(GPREL32_NMF,      RELS(R(GPREL17_S1)),                            INSNS(ADDIUGP48(GPREL_I32, SREG), LH32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GPREL17_S1)),                            INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), LH32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GPREL17_S1)),                            INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), LH32(GPREL_LO12)))
 
 // lhu $reg, %gprel(sym)($gp)
 NIP32("lhu[gp]",        0x44100001,    EXT_REG(21, 5),       NULL,                  NULL,                 NULL)
 NTT(ABS32_LONG,       RELS(R(GPREL17_S1)),                            INSNS(LUI32(HI20, SREG), LHU32(LO12)))
 NTT(PCREL32_LONG,     RELS(R(GPREL17_S1)),                            INSNS(ALUIPC32(PC_HI20, SREG), LHU32(LO12)))
 NTT(GPREL32_NMF,      RELS(R(GPREL17_S1)),                            INSNS(ADDIUGP48(GPREL_I32, SREG), LHU32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GPREL17_S1)),                            INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), LHU32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GPREL17_S1)),                            INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), LHU32(GPREL_LO12)))
 
 // sh $reg, %gprel(sym)($gp)
 NIP32("sh[gp]",         0x44140000,    EXT_REG(21, 5),       NULL,                  NULL,                 NULL)
 NTT(ABS32_LONG,       RELS(R(GPREL17_S1)),                            INSNS(LUI32(HI20, SREG), SH32(LO12)))
 NTT(PCREL32_LONG,     RELS(R(GPREL17_S1)),                            INSNS(ALUIPC32(PC_HI20, SREG), SH32(LO12)))
 NTT(GPREL32_NMF,      RELS(R(GPREL17_S1)),                            INSNS(ADDIUGP48(GPREL_I32, SREG), SH32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GPREL17_S1)),                            INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), SH32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GPREL17_S1)),                            INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), SH32(GPREL_LO12)))
 
 // lb $reg, %got_ofst(sym)($reg)
 NIP32("lb",             0x84000000,    EXT_REG(21, 5),       valid_reg,             EXT_REG(16, 5),       valid_reg)
@@ -416,7 +431,7 @@ NTT(PCREL32_LONG,     RELS(R(GOT_OFST)),                              INSNS(ALUI
 NTT(GPREL32,          RELS(R(GOT_OFST)),                              INSNS(LBGP32))
 NTT(GPREL_NMF,        RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), LB16))
 NTT(GPREL32_NMF,      RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), LB32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), LB32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), LB32(GPREL_LO12)))
 
 // lbu $reg, %got_ofst(sym)($reg)
 NIP32("lbu",            0x84002000,    EXT_REG(21, 5),       valid_reg,             EXT_REG(16, 5),       valid_reg)
@@ -427,7 +442,7 @@ NTT(PCREL32_LONG,     RELS(R(GOT_OFST)),                              INSNS(ALUI
 NTT(GPREL32,          RELS(R(GOT_OFST)),                              INSNS(LBUGP32))
 NTT(GPREL_NMF,        RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), LBU16))
 NTT(GPREL32_NMF,      RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), LBU32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), LBU32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), LBU32(GPREL_LO12)))
 
 // lh $reg, %got_ofst(sym)($reg)
 NIP32("lh",             0x84004000,    EXT_REG(21, 5),       valid_reg,             EXT_REG(16, 5),       valid_reg)
@@ -438,7 +453,7 @@ NTT(PCREL32_LONG,     RELS(R(GOT_OFST)),                              INSNS(ALUI
 NTT(GPREL32,          RELS(R(GOT_OFST)),                              INSNS(LHGP32))
 NTT(GPREL_NMF,        RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), LH16))
 NTT(GPREL32_NMF,      RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), LH32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), LH32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), LH32(GPREL_LO12)))
 
 // lhu $reg, %got_ofst(sym)($reg)
 NIP32("lhu",            0x84006000,    EXT_REG(21, 5),       valid_reg,             EXT_REG(16, 5),       valid_reg)
@@ -449,7 +464,7 @@ NTT(PCREL32_LONG,     RELS(R(GOT_OFST)),                              INSNS(ALUI
 NTT(GPREL32,          RELS(R(GOT_OFST)),                              INSNS(LHUGP32))
 NTT(GPREL_NMF,        RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), LHU16))
 NTT(GPREL32_NMF,      RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), LHU32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), LHU32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), LHU32(GPREL_LO12)))
 
 // lw $reg, %reloc(sym)($reg)
 NIP32("lw",             0x84008000,    EXT_REG(21, 5),       valid_reg,             EXT_REG(16, 5),       valid_reg)
@@ -463,7 +478,7 @@ NTT(GPREL16,          RELS(R(GOT_OFST)),                              INSNS(LWGP
 NTT(GPREL32_WORD,     RELS(R(GOT_OFST)),                              INSNS(LWGP32))
 NTT(GPREL_NMF,        RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), LW16(NONE)))
 NTT(GPREL32_NMF,      RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), LW32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), LW32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), LW32(GPREL_LO12)))
 
 // restore u, dst1, [dst2, ...] where gp = 1
 NIP32("restore[gp]",    0x80003006,    EXT_REG(16, 4),       NULL,                  ext_sres_fields,      NULL)
@@ -488,7 +503,7 @@ NTT(PCREL32_LONG,     RELS(R(GOT_OFST)),                              INSNS(ALUI
 NTT(GPREL32,          RELS(R(GOT_OFST)),                              INSNS(SBGP32))
 NTT(GPREL_NMF,        RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), SB16))
 NTT(GPREL32_NMF,      RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), SB32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), SB32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), SB32(GPREL_LO12)))
 
 // sh $reg, %got_ofst(sym)($reg)
 NIP32("sh",             0x84005000,    EXT_REG(21, 5),       valid_st_src_reg,      EXT_REG(16, 5),       valid_reg)
@@ -499,7 +514,7 @@ NTT(PCREL32_LONG,     RELS(R(GOT_OFST)),                              INSNS(ALUI
 NTT(GPREL32,          RELS(R(GOT_OFST)),                              INSNS(SHGP32))
 NTT(GPREL_NMF,        RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), SH16))
 NTT(GPREL32_NMF,      RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), SH32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), SH32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), SH32(GPREL_LO12)))
 
 // sw $reg, %reloc(sym)($reg)
 NIP32("sw",             0x84009000,    EXT_REG(21, 5),       valid_st_src_reg,      EXT_REG(16, 5),       valid_reg)
@@ -513,7 +528,7 @@ NTT(GPREL16,          RELS(R(GOT_OFST)),                              INSNS(SWGP
 NTT(GPREL32_WORD,     RELS(R(GOT_OFST)),                              INSNS(SWGP32))
 NTT(GPREL_NMF,        RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), SW16(NONE)))
 NTT(GPREL32_NMF,      RELS(R(GOT_OFST)),                              INSNS(ADDIUGP48(GPREL_I32, SREG), SW32(NONE)))
-NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDU32(SREG, SREG), SW32(GPREL_LO12)))
+NTT(GPREL_LONG,       RELS(R(GOT_OFST)),                              INSNS(LUI32(GPREL_HI20, SREG), ADDUGP32(SREG, SREG), SW32(GPREL_LO12)))
 
 // jalrc $ra, $reg
 NIP32("jalrc",          0x4be00000,    NULL,                 NULL,                  EXT_REG(16, 5),       NULL)
@@ -567,5 +582,5 @@ NTT(ABS_NMF,          RELS(R(JALR16)),                                INSNS(LI48
 NTT(ABS16_LONG,       RELS(R(JALR16)),                                INSNS(LUI32(HI20, TREG), ORI32(LO12, TREG, TREG), JALRC16(TREG)))
 NTT(PCREL16,          RELS(R(JALR16)),                                INSNS(BALC16))
 NTT(PCREL32,          RELS(R(JALR16)),                                INSNS(BALC32))
-NTT(PCREL_NMF,        RELS(R(JALR16)),                                INSNS(LAPC48, JALRC16(TREG)))
+NTT(PCREL_NMF,        RELS(R(JALR16)),                                INSNS(LAPC48(TREG), JALRC16(TREG)))
 NTT(PCREL16_LONG,     RELS(R(JALR16)),                                INSNS(ALUIPC32(PC_HI20, TREG), ORI32(LO12, TREG, TREG), JALRC16(TREG)))

@@ -4909,6 +4909,24 @@ nanomips_emit_relocs.o: nanomips_emit_relocs.s
 
 MOSTLYCLEANFILES += nanomips_emit_relocs
 
+# Test that the -fix-nmips-hw110880 performs transformations
+
+check_SCRIPTS += nanomips_fix_hw110880.sh
+check_DATA += nanomips_fix_hw110880.stdout
+
+nanomips_fix_hw110880.stdout: nanomips_fix_hw110880
+	$(TEST_OBJDUMP) -d -M show-arch-insn  $< > $@
+
+nanomips_fix_hw110880: nanomips_fix_hw110880.o ../ld-new
+	../ld-new nanomips_fix_hw110880.o --fix-nmips-hw110880 --no-relax \
+	--section-start .text=0x1000000 --section-start .foo=0x51012400 \
+	--section-start .bar=0x52012500 --section-start .frob=0x2000000 -o $@
+
+nanomips_fix_hw110880.o: nanomips_fix_hw110880.s
+	$(TEST_AS) -EL -march=32r6 -m32 -o $@ $<
+
+MOSTLYCLEANFILES += nanomips_fix_hw110880
+
 endif DEFAULT_TARGET_NANOMIPS
 
 endif NATIVE_OR_CROSS_LINKER

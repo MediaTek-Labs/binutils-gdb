@@ -2495,6 +2495,15 @@ class Nanomips_relocate_functions
   }
 
  public:
+  static inline bool
+  value_needs_hw110880_fix(Address value)
+  {
+    if (!parameters->options().fix_nmips_hw110880())
+      return false;
+
+    return  (((value & 0x50016400) == 0x50012400) &&
+            (((value >> 24) & 0x7) == 0x1 || ((value >> 24) & 0x2) == 0x2));
+  }
   // R_NANOMIPS_GOT_DISP, R_NANOMIPS_GOT_PAGE, R_NANOMIPS_GOT_CALL,
   // R_NANOMIPS_TLS_GD, , R_NANOMIPS_TLS_LD, R_NANOMIPS_TLS_GOTTPREL
   static inline Status
@@ -2646,8 +2655,17 @@ class Nanomips_relocate_functions
   // R_NANOMIPS_TLS_GOTTPREL_PC_I32, R_NANOMIPS_TLS_TPREL_I32,
   // R_NANOMIPS_TLS_DTPREL_I32
   static inline Status
-  rel48(unsigned char* view, Address value, bool should_check_overflow)
+  rel48(unsigned char* view, Address value, bool should_check_overflow,
+        const Nanomips_reloc_property* reloc_property)
   {
+    if (value_needs_hw110880_fix(value) &&
+        (reloc_property->name() == "li[48]" ||
+         reloc_property->name() == "addiu[48]" ||
+         reloc_property->name() == "addiugp[48]" ||
+         reloc_property->name() == "lapc[48]" ||
+         reloc_property->name() == "swpc[48]"))
+      return Status::STATUS_UNALIGNED;
+
     Nanomips_insn_swap<48, big_endian>::writeval(view, value);
     return (should_check_overflow ? check_overflow<32>(value, CHECK_SIGNED)
                                   : STATUS_OKAY);
@@ -4558,10 +4576,16 @@ Nanomips_transformations<size, big_endian>::transform(
   switch (r_type)
     {
     case elfcpp::R_NANOMIPS_GPREL_I32:
-    case elfcpp::R_NANOMIPS_PC_I32:
       r_offset -= 2;
       treg = insn_property->treg(insn);
       sreg = 0;
+      break;
+    case elfcpp::R_NANOMIPS_PC_I32:
+    case elfcpp::R_NANOMIPS_I32:
+      r_offset -= 2;
+      treg = insn_property->treg(insn);
+      treg = treg << 5 | treg;
+      sreg = parameters->options().expand_reg();
       break;
     case elfcpp::R_NANOMIPS_PC25_S1:
       treg = parameters->options().expand_reg();
@@ -5248,6 +5272,8 @@ Nanomips_expand_insn<size, big_endian>::find_insn(
     case elfcpp::R_NANOMIPS_TLS_GD:
     case elfcpp::R_NANOMIPS_TLS_LD:
     case elfcpp::R_NANOMIPS_TLS_GOTTPREL:
+    case elfcpp::R_NANOMIPS_PC_I32:
+    case elfcpp::R_NANOMIPS_I32:
       return nanomips_insn_property_table->get_insn_property(insn, mask,
                                                              r_type);
     default:
@@ -5344,6 +5370,11 @@ Nanomips_expand_insn<size, big_endian>::expand_type(
     case elfcpp::R_NANOMIPS_LO4_S2:
       // Transform [ls]w[16] into [ls]w.
       return TT_ABS32;
+    case elfcpp::R_NANOMIPS_PC_I32:
+    case elfcpp::R_NANOMIPS_I32:
+      return (insn_property->has_transform(TT_IMM48_FIX, r_type)
+              ? TT_IMM48_FIX
+              : TT_NONE);
     default:
       gold_unreachable();
     }
@@ -5420,12 +5451,14 @@ Nanomips_expand_insn<size, big_endian>::type(
     Address address,
     Address gp)
 {
+  typedef Nanomips_relocate_functions<size, big_endian> Reloc_funcs;
   const Address invalid_address = static_cast<Address>(0) - 1;
   const Nanomips_relobj<size, big_endian>* relobj =
     Nanomips_relobj<size, big_endian>::as_nanomips_relobj(relinfo->object);
   unsigned int r_type = elfcpp::elf_r_type<size>(reloc.get_r_info());
   typename elfcpp::Elf_types<size>::Elf_Swxword r_addend =
     reloc.get_r_addend();
+
 
   switch (r_type)
     {
@@ -5539,6 +5572,20 @@ Nanomips_expand_insn<size, big_endian>::type(
     case elfcpp::R_NANOMIPS_TLS_LD:
     case elfcpp::R_NANOMIPS_TLS_GOTTPREL:
       return this->expand_code_and_data_models(target, relobj, gsym, reloc, gp);
+    case elfcpp::R_NANOMIPS_PC_I32:
+    {
+      Valtype value = psymval->value(relobj, r_addend) - address - 6;
+      if (!Reloc_funcs::value_needs_hw110880_fix(value))
+        return TT_NONE;
+      break;
+    }
+    case elfcpp::R_NANOMIPS_I32:
+     {
+        Valtype value = psymval->value(relobj, r_addend);
+        if (!Reloc_funcs::value_needs_hw110880_fix(value))
+          return TT_NONE;
+        break;
+      }
     default:
       gold_unreachable();
     }
@@ -6952,7 +6999,7 @@ Target_nanomips<size, big_endian>::resolve_pcrel_relocatable(
   switch (r_type)
     {
     case elfcpp::R_NANOMIPS_PC_I32:
-      reloc_status = Reloc_funcs::rel48(view, value, true);
+      reloc_status = Reloc_funcs::rel48(view, value, true, reloc_property);
       break;
     case elfcpp::R_NANOMIPS_PC25_S1:
       reloc_status = Reloc_funcs::relpc25_s1(view, value, true);
@@ -8365,7 +8412,7 @@ Target_nanomips<size, big_endian>::Relocate::relocate(
     case elfcpp::R_NANOMIPS_TLS_GOTTPREL_PC_I32:
     case elfcpp::R_NANOMIPS_TLS_TPREL_I32:
     case elfcpp::R_NANOMIPS_TLS_DTPREL_I32:
-      reloc_status = Reloc_funcs::rel48(view, value, check_overflow);
+      reloc_status = Reloc_funcs::rel48(view, value, check_overflow, reloc_property);
       break;
     case elfcpp::R_NANOMIPS_32:
       {
