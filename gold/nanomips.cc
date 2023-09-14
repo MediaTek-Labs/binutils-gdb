@@ -8623,7 +8623,7 @@ Target_nanomips<size, big_endian>::Relocate::relocate(
   // If we didn't apply previous relocation, use its result as addend
   // for the current.
   if (this->calculate_only_)
-    r_addend = this->calculated_value_;
+    r_addend += this->calculated_value_;
 
   const Nanomips_reloc_property* next_reloc_property =
     nanomips_reloc_property_table->get_reloc_property(next_r_type);
