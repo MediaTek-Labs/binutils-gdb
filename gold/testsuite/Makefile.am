@@ -4938,6 +4938,22 @@ nanomips_fix_hw110880.o: nanomips_fix_hw110880.s
 
 MOSTLYCLEANFILES += nanomips_fix_hw110880
 
+# Test that the balc instructions are relaxed to their 16-bit variants.
+
+check_SCRIPTS += nanomips_balc_relax.sh
+check_DATA += nanomips_balc_relax.stdout
+
+nanomips_balc_relax.stdout: nanomips_balc_relax
+       $(TEST_OBJDUMP) -d $< > $@
+
+nanomips_balc_relax: nanomips_balc_relax.o ../ld-new
+       ../ld-new nanomips_balc_relax.o --relax -o $@
+
+nanomips_balc_relax.o: nanomips_balc_relax.s
+       $(TEST_AS) -EL -march=32r6 -m32 -o $@ $<
+
+MOSTLYCLEANFILES += nanomips_balc_relax
+
 endif DEFAULT_TARGET_NANOMIPS
 
 endif NATIVE_OR_CROSS_LINKER

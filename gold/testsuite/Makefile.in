@@ -1127,7 +1127,8 @@ check_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_saverestore_relax.sh \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_bxxzc32_relax.sh \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_emit_relocs.sh \
-@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_fix_hw110880.sh
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_fix_hw110880.sh \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_balc_relax.sh
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@am__append_107 = nanomips_b_out_of_range_pcrel.stdout \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_b_out_of_range_insn32_pcrel.stdout \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_b_out_of_range_nmf_pcrel.stdout \
@@ -1192,7 +1193,8 @@ check_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_saverestore_relax.stdout \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_bxxzc32_relax.stdout \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_emit_relocs.stdout \
-@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_fix_hw110880.stdout
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_fix_hw110880.stdout \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_balc_relax.stdout
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@am__append_108 = nanomips_b_out_of_range_pcrel \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_b_out_of_range_insn32_pcrel \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_b_out_of_range_nmf_pcrel \
@@ -1251,7 +1253,8 @@ check_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_saverestore_relax \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_bxxzc32_relax \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_emit_relocs \
-@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_fix_hw110880
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_fix_hw110880 \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_balc_relax
 @DEFAULT_TARGET_X86_64_TRUE@am__append_109 = *.dwo *.dwp
 @DEFAULT_TARGET_X86_64_TRUE@am__append_110 = dwp_test_1.sh \
 @DEFAULT_TARGET_X86_64_TRUE@	dwp_test_2.sh
@@ -5687,6 +5690,8 @@ nanomips_emit_relocs.sh.log: nanomips_emit_relocs.sh
 	@p='nanomips_emit_relocs.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 nanomips_fix_hw110880.sh.log: nanomips_fix_hw110880.sh
 	@p='nanomips_fix_hw110880.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
+nanomips_balc_relax.sh.log: nanomips_balc_relax.sh
+	@p='nanomips_balc_relax.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 dwp_test_1.sh.log: dwp_test_1.sh
 	@p='dwp_test_1.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 dwp_test_2.sh.log: dwp_test_2.sh
@@ -9095,6 +9100,15 @@ uninstall-am:
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	--section-start .bar=0x52012500 --section-start .frob=0x2000000 -o $@
 
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@nanomips_fix_hw110880.o: nanomips_fix_hw110880.s
+
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@nanomips_balc_relax.stdout: nanomips_balc_relax
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	$(TEST_OBJDUMP) -d $< > $@
+
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@nanomips_balc_relax: nanomips_balc_relax.o ../ld-new
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	../ld-new nanomips_balc_relax.o --relax -o $@
+
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@nanomips_balc_relax.o: nanomips_balc_relax.s
+
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	$(TEST_AS) -EL -march=32r6 -m32 -o $@ $<
 
 # Tests for the dwp tool.
