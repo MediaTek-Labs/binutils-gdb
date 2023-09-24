@@ -5432,8 +5432,27 @@ Nanomips_expand_insn<size, big_endian>::type(
     case elfcpp::R_NANOMIPS_PC25_S1:
       {
         Valtype value = psymval->value(relobj, r_addend) - address - 4;
-        if (!this->template has_overflow_signed<26>(value))
+
+        if (!this->template has_overflow_signed<26>(value)) {
+          if (parameters->options().fix_nmips_hw113064()) {
+            typedef typename elfcpp::Elf_types<size>::Elf_Swxword Signed_valtype;
+            // The offset in backward branch should be less than or equal to 0xffff.
+            // The offset in forward branch should be greater than or equal to
+            // 0xff0000. The range is (-33423362, 33423360).
+            if (!this->template has_overflow_signed<26>(value)) {
+              if (static_cast<Signed_valtype>(value) <=
+                  static_cast<Signed_valtype>(0xfe01fffe) ||
+                  static_cast<Signed_valtype>(value) >=
+                  static_cast<Signed_valtype>(0x1fe0000)) {
+                // Expand this to lapc+jalrc.
+                return TT_PCREL_NMF;
+              }
+            }
+          }
+
           return TT_NONE;
+        }
+
         break;
       }
     case elfcpp::R_NANOMIPS_PC21_S1:
