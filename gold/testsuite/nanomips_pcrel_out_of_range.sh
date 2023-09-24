@@ -105,6 +105,29 @@ check nanomips_move_balc_2_out_of_range_pcrel.stdout " 1002:	6023 0018 	lapc	at,
 check nanomips_move_balc_2_out_of_range_pcrel.stdout " 1006:	0200"
 check nanomips_move_balc_2_out_of_range_pcrel.stdout " 1008:	d830      	jalrc	at"
 
+# Test 1 and 2 checks the largest value that does not trigger the expansion,
+# regardless the option was set or not.
+check nanomips_long_balc_bc_offset_1.stdout "1000:.*2bfd fffe.*balc.*1fe1002 <foo>"
+check nanomips_long_balc_bc_offset_2.stdout "1000:.*2bfd fffe.*balc.*1fe1002 <foo>"
+
+# Test 3 checks that if the option is set, it triggers the expansion if the
+# offset is close to ~+-32Mb into the lapc+jalrc. This is needed in order to
+# work around a bug in the hardware.
+check nanomips_long_balc_bc_offset_3.stdout "1000:.*6023 fffe.*lapc.*at,1fe1004 <foo>"
+check nanomips_long_balc_bc_offset_3.stdout "1004:.*01fd"
+check nanomips_long_balc_bc_offset_3.stdout "1006:.*d830.*jalrc.*at"
+
+# Test 4 checks that the code remains the same, without the expansion applied.
+check nanomips_long_balc_bc_offset_4.stdout "1000:.*2bfe 0000.*balc.*fe1004 <foo>"
+
+# Test 5 checks that the expansion won't be applied, for the backward branch.
+check nanomips_long_balc_bc_offset_5.stdout "1fe0ffc:.*2a02 0001.*balc.*1000 <foo>"
+
+# Test 6 checks that the expansion will be applied, for the backward branch.
+check nanomips_long_balc_bc_offset_6.stdout "1fe0ffe:.*6023 fffc.*lapc.*at,1000.*"
+check nanomips_long_balc_bc_offset_6.stdout "1fe1002:.*fe01"
+check nanomips_long_balc_bc_offset_6.stdout "1fe1004:.*d830.*jalrc.*at"
+
 # Test lapc expansion to aluipc and ori.
 check nanomips_lapc_out_of_range_pcrel.stdout " 1000:	e080 0042 	aluipc	a0,.*"
 check nanomips_lapc_out_of_range_pcrel.stdout " 1004:	8084 0020 	ori	a0,a0,0x20"
