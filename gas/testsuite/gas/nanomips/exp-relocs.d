@@ -77,6 +77,18 @@ Disassembly of section \.text:
 			[0-9a-f]+: R_NANOMIPS_JALR32	end
 .+[0-9a-f]+:	db30      	jalrc	t9
 			[0-9a-f]+: R_NANOMIPS_JALR16	end
+.+[0-9a-f]+:	2a00 0000 	balc	0 <foo>
+			[0-9a-f]+: R_NANOMIPS_PC25_S1	foo
+			[0-9a-f]+: R_NANOMIPS_INSN32	end
+.+[0-9a-f]+:	1800      	bc	[0-9a-f]+ <end>
+			[0-9a-f]+: R_NANOMIPS_PC10_S1	end
+			[0-9a-f]+: R_NANOMIPS_INSN16	foo
+.+[0-9a-f]+:	8907 0000 	beqc	a3,a4,[0-9a-f]+ <end>
+			[0-9a-f]+: R_NANOMIPS_PC14_S1	end
+			[0-9a-f]+: R_NANOMIPS_FIXED	foo
+.+[0-9a-f]+:	2a00 0000 	balc	0 <foo>
+			[0-9a-f]+: R_NANOMIPS_PC25_S1	foo
+			[0-9a-f]+: R_NANOMIPS_NOTRAMP	end
 [0-9a-f]+ <end>:
 .+[0-9a-f]+:	4080 0000 	addiu	a0,gp,0
 			[0-9a-f]+: R_NANOMIPS_TLS_GD	tlsvar
