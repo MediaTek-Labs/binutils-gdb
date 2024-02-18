@@ -521,8 +521,9 @@ Symbol_table::should_override(const Symbol* to, unsigned int frombits,
       // If either symbol is defined by an object included using
       // --just-symbols, then don't warn.  This is for compatibility
       // with the GNU linker.  FIXME: This is a hack.
-      if ((to->source() == Symbol::FROM_OBJECT && to->object()->just_symbols())
-          || (object != NULL && object->just_symbols()))
+      if (!parameters->options().nobfd_compat_muldefs() &&
+          ((to->source() == Symbol::FROM_OBJECT && to->object()->just_symbols())
+            || (object != NULL && object->just_symbols())))
         return false;
 
       if (!parameters->options().muldefs())
