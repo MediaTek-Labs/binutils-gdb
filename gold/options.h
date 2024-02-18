@@ -1533,6 +1533,9 @@ class General_options
   DEFINE_bool(copyreloc, options::DASH_Z, '\0', true,
 	      NULL,
 	      N_("Do not create copy relocs"));
+  DEFINE_bool(nobfd_compat_muldefs, options::DASH_Z, '\0', false,
+	      N_("Do not allow multiple definitions of symbols when using --just-symbols"),
+	      NULL);
   DEFINE_bool(nodefaultlib, options::DASH_Z, '\0', false,
 	      N_("Mark object not to use default search paths"),
 	      NULL);
