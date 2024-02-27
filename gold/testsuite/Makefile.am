@@ -4875,6 +4875,33 @@ nanomips_emit_relocs.o: nanomips_emit_relocs.s
 
 MOSTLYCLEANFILES += nanomips_emit_relocs
 
+# Test duplicate definition behaviour with --just-symbols
+# Not nanoMIPS specific, but we only run these tests on host.
+
+check_SCRIPTS += nanomips_justsymbols_muldefs.sh
+check_DATA += nanomips_justsymbols_muldefs.stdout nanomips_justsymbols_nobfd_compat_muldefs.stderr
+
+nanomips_justsymbols_muldefs.stdout: nanomips_justsymbols_muldefs.o nanomips_justsymbols_muldefs.syms
+	@if ../ld-new -relax --just-symbols=$(word 2,$^) -o /dev/null $(word 1,$^) >$@; \
+	then \
+	  echo "no error" > $@; \
+	  exit 0; \
+	fi
+
+nanomips_justsymbols_nobfd_compat_muldefs.stderr: nanomips_justsymbols_muldefs.o nanomips_justsymbols_muldefs.syms
+	@if ../ld-new -relax --just-symbols=$(word 2,$^) -z nobfd-compat-muldefs -o /dev/null $(word 1,$^) 2>$@; \
+	then \
+	  rm -f $@; \
+	  exit 1; \
+	fi
+
+nanomips_justsymbols_muldefs.o: nanomips_justsymbols_muldefs.s
+	$(TEST_AS) -EL -march=32r6 -m32 -o $@ $<
+nanomips_justsymbols_muldefs.syms: nanomips_justsymbols_muldefs.o
+	$(TEST_OBJCOPY) --keep-global-symbol=__start $< $@
+
+MOSTLYCLEANFILES += nanomips_justsymbols_muldefs.stdout nanomips_justsymbols_nobfd_compat_muldefs.stderr
+
 endif DEFAULT_TARGET_NANOMIPS
 
 endif NATIVE_OR_CROSS_LINKER
