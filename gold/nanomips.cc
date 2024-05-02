@@ -5449,6 +5449,18 @@ Nanomips_expand_insn<size, big_endian>::type(
               }
             }
           }
+	  else if (parameters->options().fix_nmips_hw142543()) {
+            typedef typename elfcpp::Elf_types<size>::Elf_WXword Unsigned_valtype;
+            // The offset is aligned to (128k - 2) and the target
+            // address is 128k aligned.
+            if (!this->template has_overflow_signed<26>(value) &&
+		((static_cast<Unsigned_valtype>(address) &
+		  static_cast<Unsigned_valtype>(0x1fffe)) == 0x1fffe) &&
+		((static_cast<Unsigned_valtype>(psymval->value(relobj, r_addend)) &
+		  static_cast<Unsigned_valtype>(0x1ffff)) == 0))
+	      // Expand this to lapc+jalrc/jrc.
+	      return TT_PCREL_NMF;
+	  }
 
           return TT_NONE;
         }
@@ -5458,6 +5470,18 @@ Nanomips_expand_insn<size, big_endian>::type(
     case elfcpp::R_NANOMIPS_PC21_S1:
       {
         Valtype value = psymval->value(relobj, r_addend) - address - 4;
+	if (parameters->options().fix_nmips_hw142543()) {
+            typedef typename elfcpp::Elf_types<size>::Elf_WXword Unsigned_valtype;
+            // The offset is aligned to (128k - 2) and the target
+            // address is 128k aligned.
+            if (!this->template has_overflow_signed<22>(value) &&
+		((static_cast<Unsigned_valtype>(address) &
+		  static_cast<Unsigned_valtype>(0x1fffe)) == 0x1fffe) &&
+		((static_cast<Unsigned_valtype>(psymval->value(relobj, r_addend)) &
+		  static_cast<Unsigned_valtype>(0x1ffff)) == 0))
+	      // Expand this to move + balc
+	      return TT_PCREL32_LONG;
+	  }
         if (((value & 0x1) == 0)
             && !this->template has_overflow_signed<22>(value))
           return TT_NONE;

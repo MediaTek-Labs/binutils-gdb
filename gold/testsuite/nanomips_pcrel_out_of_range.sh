@@ -175,4 +175,41 @@ check nanomips_b_cond_out_of_range_pcrel.stdout "  1064:	281f ffb8 	bc	201020 <f
 check nanomips_b_cond_out_of_range_pcrel.stdout "  1068:	cb0c 3004 	bgeiuc	t8,6,.*"
 check nanomips_b_cond_out_of_range_pcrel.stdout "  106c:	281f ffb0 	bc	201020 <foo>"
 
+
+# 1. All transformations (BC/BALC/MOVE.BALC) with fix enabled, +ve and -ve minimum offsets
+check nanomips_aligned_branch_1.stdout " 1fffe:.*lapc	at,60000 <foo>"
+check nanomips_aligned_branch_1.stdout " 20004:.*jalrc	at"
+check nanomips_aligned_branch_1.stdout " 3fffe:.*lapc	at,60000 <foo>"
+check nanomips_aligned_branch_1.stdout " 40004:.*jrc	at"
+check nanomips_aligned_branch_1.stdout " 7fffe:.*move	a0,s0"
+check nanomips_aligned_branch_1.stdout " 80000:.*balc	60000 <foo>"
+
+# 2. No transformations for (1) + fix disabled
+check nanomips_aligned_branch_2.stdout " 1fffe:.*balc	60000 <foo>"
+check nanomips_aligned_branch_2.stdout " 3fffe:.*bc	60000 <foo>"
+check nanomips_aligned_branch_2.stdout " 7fffe:.*move.balc	a0,s0,60000 <foo>"
+
+# 3. All transformations (BC/BALC/MOVE.BALC) with fix enabled, +ve and -ve maximum offsets
+check nanomips_aligned_branch_3.stdout "7e03fffe:.*lapc	at,80000000 "
+check nanomips_aligned_branch_3.stdout "7e040004:.*jalrc	at"
+check nanomips_aligned_branch_3.stdout "801dfffe:.*move	a0,s0"
+check nanomips_aligned_branch_3.stdout "801e0000:.*balc	80000000 "
+check nanomips_aligned_branch_3.stdout "81fdfffe:.*lapc	at,80000000 "
+check nanomips_aligned_branch_3.stdout "81fe0004:.*jrc	at"
+
+# 4. No transformations for (1) + fix disabled
+check nanomips_aligned_branch_4.stdout "7e03fffe:.*balc	80000000 "
+check nanomips_aligned_branch_4.stdout "801dfffe:.*move.balc	a0,s0,80000000 "
+check nanomips_aligned_branch_4.stdout "81fdfffe:.*bc	80000000 "
+
+# 5. No transformations when target address is not 128k aligned
+check nanomips_aligned_branch_5.stdout " 1fffe:.*balc	60004 <foo>"
+check nanomips_aligned_branch_5.stdout " 3fffe:.*bc	60004 <foo>"
+check nanomips_aligned_branch_5.stdout " 7fffe:.*move.balc	a0,s0,60004 <foo>"
+
+# 6. No transformations when branch is not (128k - 2) aligned
+check nanomips_aligned_branch_6.stdout " fffe:.*balc	60000 <foo>"
+check nanomips_aligned_branch_6.stdout " 40000:.*bc	60000 <foo>"
+check nanomips_aligned_branch_6.stdout " 7fffc:.*move.balc	a0,s0,60000 <foo>"
+
 exit 0

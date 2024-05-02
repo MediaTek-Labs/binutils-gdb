@@ -4269,6 +4269,12 @@ check_DATA += nanomips_b_out_of_range_pcrel.stdout \
 	      nanomips_long_balc_bc_offset_4.stdout \
 	      nanomips_long_balc_bc_offset_5.stdout \
 	      nanomips_long_balc_bc_offset_6.stdout \
+	      nanomips_aligned_branch_1.stdout \
+	      nanomips_aligned_branch_2.stdout \
+	      nanomips_aligned_branch_3.stdout \
+	      nanomips_aligned_branch_4.stdout \
+	      nanomips_aligned_branch_5.stdout \
+	      nanomips_aligned_branch_6.stdout \
 	      nanomips_lapc_out_of_range_pcrel.stdout \
 	      nanomips_lapc_out_of_range_nmf_pcrel.stdout \
 	      nanomips_lapc_out_of_range_abs.stdout \
@@ -4317,6 +4323,9 @@ nanomips_long_balc_bc_offset_6.stdout: nanomips_long_balc_bc_offset_6
 	$(TEST_OBJDUMP) -d $< > $@
 
 nanomips_b_cond_out_of_range_pcrel.stdout: nanomips_b_cond_out_of_range_pcrel
+	$(TEST_OBJDUMP) -d $< > $@
+
+nanomips_aligned_branch%.stdout: nanomips_aligned_branch%
 	$(TEST_OBJDUMP) -d $< > $@
 
 nanomips_lapc_out_of_range_pcrel.stdout: nanomips_lapc_out_of_range_pcrel
@@ -4376,6 +4385,24 @@ nanomips_long_balc_bc_offset_5: nanomips_long_balc_bc_offset.o ../ld-new
 nanomips_long_balc_bc_offset_6: nanomips_long_balc_bc_offset.o ../ld-new
 	../ld-new --fix-nmips-hw113064 --section-start .text=0x1fe0ffe --section-start .foo=0x1000 -o $@ $<
 
+nanomips_aligned_branch_1: nanomips_aligned_branch.o ../ld-new
+	../ld-new --fix-nmips-hw142543 --section-start .call=0x1fffe --section-start .tailcall=0x3fffe --section-start .foo=0x60000 --section-start .argcall=0x7fffe -o $@ $<
+
+nanomips_aligned_branch_2: nanomips_aligned_branch.o ../ld-new
+	../ld-new --section-start .call=0x1fffe --section-start .tailcall=0x3fffe --section-start .foo=0x60000 --section-start .argcall=0x7fffe -o $@ $<
+
+nanomips_aligned_branch_3: nanomips_aligned_branch.o ../ld-new
+	../ld-new --fix-nmips-hw142543 --section-start .call=0x7e03fffe --section-start .foo=0x80000000 --section-start .tailcall=0x81fdfffe --section-start .argcall=0x801dfffe -o $@ $<
+
+nanomips_aligned_branch_4: nanomips_aligned_branch.o ../ld-new
+	../ld-new --section-start .call=0x7e03fffe --section-start .foo=0x80000000 --section-start .tailcall=0x81fdfffe --section-start .argcall=0x801dfffe -o $@ $<
+
+nanomips_aligned_branch_5: nanomips_aligned_branch.o ../ld-new
+	../ld-new --fix-nmips-hw142543 --section-start .call=0x1fffe --section-start .tailcall=0x3fffe --section-start .foo=0x60004 --section-start .argcall=0x7fffe -o $@ $<
+
+nanomips_aligned_branch_6: nanomips_aligned_branch.o ../ld-new
+	../ld-new --fix-nmips-hw142543 --section-start .call=0x0fffe --section-start .tailcall=0x40000 --section-start .foo=0x60000 --section-start .argcall=0x7fffc -o $@ $<
+
 nanomips_lapc_out_of_range_pcrel: nanomips_lapc_out_of_range_pcrel.o ../ld-new
 	../ld-new --section-start .text=0x1000 --section-start .foo=0x2001020 -o $@ $<
 
@@ -4413,6 +4440,9 @@ nanomips_move_balc_out_of_range_pcrel.o: nanomips_move_balc_out_of_range.s
 	$(TEST_AS) -EL -march=32r6 -m32 -mpcrel -o $@ $<
 
 nanomips_long_balc_bc_offset.o: nanomips_long_balc_bc_offset.s
+	$(TEST_AS) -EL -march=32r6 -m32 -mpcrel -o $@ $<
+
+nanomips_aligned_branch.o: nanomips_aligned_branch.s
 	$(TEST_AS) -EL -march=32r6 -m32 -mpcrel -o $@ $<
 
 nanomips_lapc_out_of_range_pcrel.o: nanomips_lapc_out_of_range.s

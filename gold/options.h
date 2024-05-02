@@ -1221,6 +1221,10 @@ class General_options
         N_("(nanoMIPS only) Fix binaries for nanoMIPS erratum 113064"),
         N_("(nanoMIPS only) Do not fix binaries for nanoMIPS erratum 113064"));
 
+  DEFINE_bool(fix_nmips_hw142543, options::TWO_DASHES, '\0', false,
+        N_("(nanoMIPS only) Fix binaries for nanoMIPS erratum 142543"),
+        N_("(nanoMIPS only) Do not fix binaries for nanoMIPS erratum 142543"));
+
   DEFINE_string(retain_symbols_file, options::TWO_DASHES, '\0', NULL,
 		N_("keep only symbols listed in this file"), N_("FILE"));
 
