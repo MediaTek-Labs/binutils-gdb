@@ -128,6 +128,11 @@ check nanomips_long_balc_bc_offset_6.stdout "1fe0ffe:.*6023 fffc.*lapc.*at,1000.
 check nanomips_long_balc_bc_offset_6.stdout "1fe1002:.*fe01"
 check nanomips_long_balc_bc_offset_6.stdout "1fe1004:.*d830.*jalrc.*at"
 
+# Test 7, repeats test 3 and checks intereference with --fix-nmips-hw142543
+check nanomips_long_balc_bc_offset_7.stdout "1000:.*6023 fffe.*lapc.*at,1fe1004 <foo>"
+check nanomips_long_balc_bc_offset_7.stdout "1004:.*01fd"
+check nanomips_long_balc_bc_offset_7.stdout "1006:.*d830.*jalrc.*at"
+
 # Test lapc expansion to aluipc and ori.
 check nanomips_lapc_out_of_range_pcrel.stdout " 1000:	e080 0042 	aluipc	a0,.*"
 check nanomips_lapc_out_of_range_pcrel.stdout " 1004:	8084 0020 	ori	a0,a0,0x20"
@@ -211,5 +216,13 @@ check nanomips_aligned_branch_5.stdout " 7fffe:.*move.balc	a0,s0,60004 <foo>"
 check nanomips_aligned_branch_6.stdout " fffe:.*balc	60000 <foo>"
 check nanomips_aligned_branch_6.stdout " 40000:.*bc	60000 <foo>"
 check nanomips_aligned_branch_6.stdout " 7fffc:.*move.balc	a0,s0,60000 <foo>"
+
+# 7. All transformations (1), check interference with --fix-nmips-hw113064
+check nanomips_aligned_branch_7.stdout " 1fffe:.*lapc	at,60000 <foo>"
+check nanomips_aligned_branch_7.stdout " 20004:.*jalrc	at"
+check nanomips_aligned_branch_7.stdout " 3fffe:.*lapc	at,60000 <foo>"
+check nanomips_aligned_branch_7.stdout " 40004:.*jrc	at"
+check nanomips_aligned_branch_7.stdout " 7fffe:.*move	a0,s0"
+check nanomips_aligned_branch_7.stdout " 80000:.*balc	60000 <foo>"
 
 exit 0

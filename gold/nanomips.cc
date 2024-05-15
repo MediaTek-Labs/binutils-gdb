@@ -1697,6 +1697,12 @@ class Nanomips_expand_insn : public Nanomips_transformations<size, big_endian>
                               const Symbol* gsym,
                               const elfcpp::Rela<size, big_endian>& reloc,
                               Address gp);
+
+  bool
+  Is_HW113064_trigger(Valtype value);
+
+  bool
+  Is_HW142543_trigger(Address address, Address target);
 };
 
 // The class which implements expansions during --finalize-relocs.
@@ -5404,6 +5410,35 @@ Nanomips_expand_insn<size, big_endian>::expand_code_and_data_models(
     }
 }
 
+template<int size, bool big_endian>
+bool
+Nanomips_expand_insn<size, big_endian>::Is_HW113064_trigger(Valtype value)
+{
+  typedef typename elfcpp::Elf_types<size>::Elf_Swxword Signed_valtype;
+  // The offset in backward branch should be less than or equal to 0xffff.
+  // The offset in forward branch should be greater than or equal to
+  // 0xff0000. The range is (-33423362, 33423360).
+  return (parameters->options().fix_nmips_hw113064()
+	  && ((static_cast<Signed_valtype>(value)
+	       <= static_cast<Signed_valtype>(0xfe01fffe))
+	      || (static_cast<Signed_valtype>(value)
+		  >= static_cast<Signed_valtype>(0x1fe0000))));
+}
+
+template<int size, bool big_endian>
+bool
+Nanomips_expand_insn<size, big_endian>::Is_HW142543_trigger(Address address, Address target)
+{
+  typedef typename elfcpp::Elf_types<size>::Elf_WXword Unsigned_valtype;
+  // The offset is aligned to (128k - 2) and the target
+  // address is 128k aligned.
+  return (parameters->options().fix_nmips_hw142543()
+	  && ((static_cast<Unsigned_valtype>(address)
+	       & static_cast<Unsigned_valtype>(0x1fffe)) == 0x1fffe)
+	  && ((static_cast<Unsigned_valtype>(target)
+	       & static_cast<Unsigned_valtype>(0x1ffff)) == 0));
+}
+
 // Return the transformation type if instruction needs to be expanded.
 
 template<int size, bool big_endian>
@@ -5433,59 +5468,30 @@ Nanomips_expand_insn<size, big_endian>::type(
       {
         Valtype value = psymval->value(relobj, r_addend) - address - 4;
 
-        if (!this->template has_overflow_signed<26>(value)) {
-          if (parameters->options().fix_nmips_hw113064()) {
-            typedef typename elfcpp::Elf_types<size>::Elf_Swxword Signed_valtype;
-            // The offset in backward branch should be less than or equal to 0xffff.
-            // The offset in forward branch should be greater than or equal to
-            // 0xff0000. The range is (-33423362, 33423360).
-            if (!this->template has_overflow_signed<26>(value)) {
-              if (static_cast<Signed_valtype>(value) <=
-                  static_cast<Signed_valtype>(0xfe01fffe) ||
-                  static_cast<Signed_valtype>(value) >=
-                  static_cast<Signed_valtype>(0x1fe0000)) {
-                // Expand this to lapc+jalrc.
-                return TT_PCREL_NMF;
-              }
-            }
-          }
-	  else if (parameters->options().fix_nmips_hw142543()) {
-            typedef typename elfcpp::Elf_types<size>::Elf_WXword Unsigned_valtype;
-            // The offset is aligned to (128k - 2) and the target
-            // address is 128k aligned.
-            if (!this->template has_overflow_signed<26>(value) &&
-		((static_cast<Unsigned_valtype>(address) &
-		  static_cast<Unsigned_valtype>(0x1fffe)) == 0x1fffe) &&
-		((static_cast<Unsigned_valtype>(psymval->value(relobj, r_addend)) &
-		  static_cast<Unsigned_valtype>(0x1ffff)) == 0))
+        if (!this->template has_overflow_signed<26>(value))
+	  {
+	    if (Is_HW113064_trigger(value)
+		|| Is_HW142543_trigger(address, psymval->value(relobj, r_addend)))
 	      // Expand this to lapc+jalrc/jrc.
 	      return TT_PCREL_NMF;
-	  }
 
-          return TT_NONE;
-        }
+	    return TT_NONE;
+	  }
 
         break;
       }
     case elfcpp::R_NANOMIPS_PC21_S1:
       {
         Valtype value = psymval->value(relobj, r_addend) - address - 4;
-	if (parameters->options().fix_nmips_hw142543()) {
-            typedef typename elfcpp::Elf_types<size>::Elf_WXword Unsigned_valtype;
-            // The offset is aligned to (128k - 2) and the target
-            // address is 128k aligned.
-            if (!this->template has_overflow_signed<22>(value) &&
-		((static_cast<Unsigned_valtype>(address) &
-		  static_cast<Unsigned_valtype>(0x1fffe)) == 0x1fffe) &&
-		((static_cast<Unsigned_valtype>(psymval->value(relobj, r_addend)) &
-		  static_cast<Unsigned_valtype>(0x1ffff)) == 0))
+	if (!this->template has_overflow_signed<22>(value))
+	  {
+	    if (Is_HW142543_trigger(address, psymval->value(relobj, r_addend)))
 	      // Expand this to move + balc
 	      return TT_PCREL32_LONG;
+	    if ((value & 0x1) == 0)
+	      return TT_NONE;
 	  }
-        if (((value & 0x1) == 0)
-            && !this->template has_overflow_signed<22>(value))
-          return TT_NONE;
-        break;
+	break;
       }
     case elfcpp::R_NANOMIPS_PC14_S1:
       {
