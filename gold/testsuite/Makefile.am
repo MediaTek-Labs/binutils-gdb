@@ -4443,7 +4443,8 @@ check_DATA += nanomips_gprel_out_of_range.stdout \
 	      nanomips_gprel_out_of_range_no_strict_abs.stdout \
 	      nanomips_gprel_nmf_out_of_range_no_strict_abs.stdout \
 	      nanomips_gprel_out_of_range_no_strict_pcrel.stdout \
-	      nanomips_gprel_nmf_out_of_range_no_strict_pcrel.stdout
+	      nanomips_gprel_nmf_out_of_range_no_strict_pcrel.stdout \
+	      nanomips_gprel_out_of_range_small.stdout
 
 nanomips_gprel_out_of_range.stdout: nanomips_gprel_out_of_range
 	$(TEST_OBJDUMP) -d $< > $@
@@ -4461,6 +4462,9 @@ nanomips_gprel_out_of_range_no_strict_pcrel.stdout: nanomips_gprel_out_of_range_
 	$(TEST_OBJDUMP) -d $< > $@
 
 nanomips_gprel_nmf_out_of_range_no_strict_pcrel.stdout: nanomips_gprel_nmf_out_of_range_no_strict_pcrel
+	$(TEST_OBJDUMP) -d $< > $@
+
+nanomips_gprel_out_of_range_small.stdout: nanomips_gprel_out_of_range_small
 	$(TEST_OBJDUMP) -d $< > $@
 
 nanomips_gprel_out_of_range: nanomips_gprel_out_of_range_abs.o ../ld-new
@@ -4481,6 +4485,9 @@ nanomips_gprel_out_of_range_no_strict_pcrel: nanomips_gprel_out_of_range_pcrel.o
 nanomips_gprel_nmf_out_of_range_no_strict_pcrel: nanomips_gprel_nmf_out_of_range_pcrel.o ../ld-new
 	../ld-new -T $(srcdir)/nanomips_gprel_out_of_range.t --no-strict-address-modes -o $@ $<
 
+nanomips_gprel_out_of_range_small: nanomips_gprel_out_of_range_small.o ../ld-new
+	../ld-new -T $(srcdir)/nanomips_gprel_out_of_range_small.t -o $@ $<
+
 nanomips_gprel_out_of_range_abs.o: nanomips_gprel_out_of_range.s
 	$(TEST_AS) -EL -march=32r6s -m32 -o $@ $<
 
@@ -4493,11 +4500,15 @@ nanomips_gprel_out_of_range_pcrel.o: nanomips_gprel_out_of_range.s
 nanomips_gprel_nmf_out_of_range_pcrel.o: nanomips_gprel_out_of_range.s
 	$(TEST_AS) -EL -march=32r6 -m32 -mpcrel -o $@ $<
 
+nanomips_gprel_out_of_range_small.o: nanomips_gprel_out_of_range_small.s
+	$(TEST_AS) -EL -march=32r6 -m32 -o $@ $<
+
 MOSTLYCLEANFILES += nanomips_gprel_out_of_range nanomips_gprel_nmf_out_of_range \
 		    nanomips_gprel_out_of_range_no_strict_abs \
 		    nanomips_gprel_nmf_out_of_range_no_strict_abs \
 		    nanomips_gprel_out_of_range_no_strict_pcrel \
-		    nanomips_gprel_nmf_out_of_range_no_strict_pcrel
+		    nanomips_gprel_nmf_out_of_range_no_strict_pcrel \
+		    nanomips_gprel_out_of_range_small
 
 # Test sorting small data section.
 
@@ -4926,6 +4937,39 @@ nanomips_fix_hw110880.o: nanomips_fix_hw110880.s
 	$(TEST_AS) -EL -march=32r6 -m32 -o $@ $<
 
 MOSTLYCLEANFILES += nanomips_fix_hw110880
+
+# Test that the balc instructions are relaxed to their 16-bit variants.
+
+check_SCRIPTS += nanomips_balc_relax.sh
+check_DATA += nanomips_balc_relax.stdout
+
+nanomips_balc_relax.stdout: nanomips_balc_relax
+	$(TEST_OBJDUMP) -d $< > $@
+
+nanomips_balc_relax: nanomips_balc_relax.o ../ld-new
+	../ld-new nanomips_balc_relax.o --relax -o $@
+
+nanomips_balc_relax.o: nanomips_balc_relax.s
+	$(TEST_AS) -EL -march=32r6 -m32 -o $@ $<
+
+MOSTLYCLEANFILES += nanomips_balc_relax
+
+check_SCRIPTS += nanomips_balc_trampoline.sh
+check_DATA += nanomips_balc_trampoline.stdout
+
+nanomips_balc_trampoline.stdout: nanomips_balc_trampoline
+	$(TEST_OBJDUMP) -d $< > $@
+
+nanomips_balc_trampoline: nanomips_balc_trampoline_sup.o nanomips_balc_trampoline.o nanomips_balc_trampoline.ld ../ld-new
+	../ld-new  -Tnanomips_balc_trampoline.ld nanomips_balc_trampoline_sup.o nanomips_balc_trampoline.o -o $@
+
+nanomips_balc_trampoline_sup.o: nanomips_balc_trampoline_sup.s
+	$(TEST_AS) -EL -march=32r6 -m32 -o $@ $<
+
+nanomips_balc_trampoline.o: nanomips_balc_trampoline.s
+	$(TEST_AS) -EL -march=32r6 -m32 -o $@ $<
+
+MOSTLYCLEANFILES += nanomips_balc_trampoline
 
 endif DEFAULT_TARGET_NANOMIPS
 

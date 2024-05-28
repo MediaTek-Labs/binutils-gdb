@@ -59,3 +59,10 @@ stamp-*
 /mpc*
 /gmp*
 /isl*
+
+# new-ignores
+
+**/build/
+**/install/
+
+.vscode

@@ -298,4 +298,18 @@ check nanomips_gprel_nmf_out_of_range_no_strict_pcrel.stdout " 1040:	01f0"
 check nanomips_gprel_nmf_out_of_range_no_strict_pcrel.stdout " 1042:	61e2 0000 	addiu	t3,gp,.*"
 check nanomips_gprel_nmf_out_of_range_no_strict_pcrel.stdout " 1046:	01f0"
 
+# Test addiu expansion to addiu[gp.w]
+check nanomips_gprel_out_of_range_small.stdout " 1000:	41c4 0004 	addiu	t2,gp,262148"
+# Test addiu[gp.b] expansion to addiu[gp.w]
+check nanomips_gprel_out_of_range_small.stdout " 1004:	4204 0004 	addiu	s0,gp,262148"
+# Test la expansion to addiu[gp.w]
+check nanomips_gprel_out_of_range_small.stdout " 1008:	4224 0004 	addiu	s1,gp,262148"
+
+# Test addiu expansion to addiu[gp48]
+check nanomips_gprel_out_of_range_small.stdout " 100c:	61c2 0002 	addiu	t2,gp,262146"
+check nanomips_gprel_out_of_range_small.stdout " 1010:	0004"
+# Test addiu[gp.b] expansion to addiu[gp48]
+check nanomips_gprel_out_of_range_small.stdout " 1012:	61e2 0002 	addiu	t3,gp,262146"
+check nanomips_gprel_out_of_range_small.stdout " 1016:	0004"
+
 exit 0
