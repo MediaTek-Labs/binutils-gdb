@@ -4998,6 +4998,56 @@ nanomips_justsymbols_muldefs.syms: nanomips_justsymbols_muldefs.o
 
 MOSTLYCLEANFILES += nanomips_justsymbols_muldefs.stdout nanomips_justsymbols_nobfd_compat_muldefs.stderr
 
+# Test ABI version increment and mixed linking errors
+
+check_SCRIPTS += nanomips_abi_version.sh
+check_DATA += nanomips_abi_version_10.stderr nanomips_abi_version_01.stderr \
+              nanomips_abi_version_0.stdout nanomips_abi_version_1.stdout \
+              nanomips_no_abi_mismatch_01.stdout nanomips_no_abi_mismatch_10.stdout
+
+nanomips_abi_version_%: nanomips_foo_abi_%.o nanomips_bar_abi_%.o
+	../ld-new $^ -o $@
+
+nanomips_abi_version_%.stdout: nanomips_abi_version_%
+	$(TEST_READELF) -h $< | grep -e "ABI Version:" > $@
+
+nanomips_abi_version_01.stderr: nanomips_foo_abi_0.o nanomips_bar_abi_1.o
+	@if ../ld-new -o /dev/null $^ 2>$@; \
+	then \
+	  rm -f $@; \
+	  exit 1; \
+	fi
+
+nanomips_abi_version_10.stderr: nanomips_foo_abi_1.o nanomips_bar_abi_0.o
+	@if ../ld-new -o /dev/null $^ 2>$@; \
+	then \
+	  rm -f $@; \
+	  exit 1; \
+	fi
+
+nanomips_no_abi_mismatch_01: nanomips_foo_abi_0.o nanomips_bar_abi_1.o
+	../ld-new --allow-abi-mismatch -o $@ $^
+
+nanomips_no_abi_mismatch_10: nanomips_foo_abi_1.o nanomips_bar_abi_0.o
+	../ld-new --allow-abi-mismatch -o $@ $^
+
+nanomips_no_abi_mismatch_%.stdout: nanomips_no_abi_mismatch_%
+	$(TEST_READELF) -h $< | grep -e "ABI Version:" > $@
+
+nanomips_%.o: nanomips_%.s
+	$(TEST_AS) -EL -march=32r6 -m32 -o $@ $<
+
+%_abi_0.o: %.o
+	cp $< $@
+	printf '\x0' | dd of=$@ bs=1 count=1 seek=8 conv=notrunc
+
+%_abi_1.o: %.o
+	cp $< $@
+	printf '\x1' | dd of=$@ bs=1 count=1 seek=8 conv=notrunc
+
+MOSTLYCLEANFILES += nanomips_abi_version_10.stderr nanomips_abi_version_01.stderr \
+              nanomips_abi_version_0.stdout nanomips_abi_version_1.stdout
+
 endif DEFAULT_TARGET_NANOMIPS
 
 endif NATIVE_OR_CROSS_LINKER

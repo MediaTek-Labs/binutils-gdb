@@ -841,7 +841,7 @@ class Nanomips_relobj : public Sized_relobj_file<size, big_endian>
       attributes_section_data_(NULL), abiflags_(NULL),
       processor_specific_flags_(0), input_sections_changed_(false),
       merge_processor_specific_data_(true)
-  { }
+  { this->set_abiversion(ehdr.get_e_ident()[elfcpp::EI_ABIVERSION]); }
 
   ~Nanomips_relobj()
   { delete this->attributes_section_data_; }
@@ -922,6 +922,14 @@ class Nanomips_relobj : public Sized_relobj_file<size, big_endian>
   std::string
   local_symbol_name(unsigned symndx,
                     typename elfcpp::Elf_types<size>::Elf_Swxword r_addend);
+
+  uint8_t
+  abiversion() const
+  { return this->abiversion_; }
+
+  // Set ABI version for input and output
+  void
+  set_abiversion(uint8_t ver);
 
   // Increase the input section reference.
   void
@@ -1275,6 +1283,8 @@ class Nanomips_relobj : public Sized_relobj_file<size, big_endian>
   bool input_sections_changed_;
   // Whether we merge processor-specific data of this object to output.
   bool merge_processor_specific_data_;
+  // ELF header ABI version
+  uint8_t abiversion_;
 };
 
 // A class to wrap an ordinary input section.
@@ -1872,8 +1882,16 @@ class Target_nanomips : public Sized_target<size, big_endian>
     : Sized_target<size, big_endian>(info), state_(NO_TRANSFORM), got_(NULL),
       stubs_(NULL), rel_dyn_(NULL), copy_relocs_(elfcpp::R_NANOMIPS_COPY),
       gp_(NULL), attributes_section_data_(NULL), abiflags_(NULL),
-      got_mod_index_offset_(-1U), has_abiflags_section_(false)
+      got_mod_index_offset_(-1U), has_abiflags_section_(false), abiversion_(0)
   { }
+
+  uint8_t
+  abiversion() const
+  { return abiversion_;}
+
+  void
+  set_abiversion(uint8_t ver)
+  { abiversion_ = ver;}
 
   // Make a new symbol table entry for the Nanomips target.
   Sized_symbol<size>*
@@ -2087,6 +2105,10 @@ class Target_nanomips : public Sized_target<size, big_endian>
   Object*
   do_make_elf_object(const std::string&, Input_file*, off_t,
                      const elfcpp::Ehdr<size, big_endian>&);
+
+  // Adjust ELF file header.
+  void
+  do_adjust_elf_header(unsigned char* view, int len);
 
   // Relaxation hook.  This is where we do transformations of nanoMIPS
   // instructions.
@@ -2387,6 +2409,8 @@ class Target_nanomips : public Sized_target<size, big_endian>
   unsigned int got_mod_index_offset_;
   // Whether there is an input .nanoMIPS.abiflags section.
   bool has_abiflags_section_;
+  // ELF header ABI version
+  uint8_t abiversion_;
 };
 
 template<int size, bool big_endian>
@@ -3252,6 +3276,28 @@ Nanomips_relobj<size, big_endian>::new_nanomips_input_section(
   this->set_input_section(data_shndx, input_section);
   this->input_sections_changed_ = true;
   return input_section;
+}
+
+// Set ABI version for input and output.
+
+template<int size, bool big_endian>
+void
+Nanomips_relobj<size, big_endian>::set_abiversion(uint8_t ver)
+{
+  this->abiversion_ = ver;
+  Target_nanomips<size, big_endian>* target =
+  static_cast<Target_nanomips<size, big_endian>*>(
+		  parameters->sized_target<size, big_endian>());
+  if (target->abiversion() <= ver)
+    target->set_abiversion(ver);
+  else if (!parameters->options().allow_abi_mismatch())
+    {
+      gold_error(_("%s: ABI version %d is not compatible "
+		   "with ABI version %d output"),
+		 this->name().c_str(),
+		 this->abiversion(), target->abiversion());
+      this->abiversion_ = target->abiversion();
+    }
 }
 
 // Determine for which function we can remove GP register from
@@ -6549,6 +6595,25 @@ Target_nanomips<size, big_endian>::do_make_elf_object(
     }
 }
 
+// Adjust ELF file header.
+
+template<int size, bool big_endian>
+void
+Target_nanomips<size, big_endian>::do_adjust_elf_header(
+    unsigned char* view,
+    int len)
+{
+  gold_assert(len == elfcpp::Elf_sizes<size>::ehdr_size);
+
+  elfcpp::Ehdr<size, big_endian> ehdr(view);
+  unsigned char e_ident[elfcpp::EI_NIDENT];
+  memcpy(e_ident, ehdr.get_e_ident(), elfcpp::EI_NIDENT);
+
+  e_ident[elfcpp::EI_ABIVERSION] = this->abiversion();
+  elfcpp::Ehdr_write<size, big_endian> oehdr(view);
+  oehdr.put_e_ident(e_ident);
+}
+
 // Finalize the sections.
 
 template <int size, bool big_endian>
@@ -6577,7 +6642,17 @@ Target_nanomips<size, big_endian>::do_finalize_sections(
         first_relobj = relobj;
 
       Nanomips_abiflags<big_endian> in_abiflags;
-
+      // Target records the minimum required ABI version. If any object
+      // has a lesser ABI Version, we need to trigger and error.
+      if (!parameters->options().allow_abi_mismatch()
+	  && relobj->abiversion() < this->abiversion())
+	{
+	  gold_error(_("%s: ABI version %d is not compatible "
+		       "with ABI version %d output"),
+		     relobj->name().c_str(),
+		     relobj->abiversion(), this->abiversion());
+	  relobj->set_abiversion(this->abiversion());
+	}
       this->create_abiflags(relobj, &in_abiflags);
       this->merge_obj_e_flags(relobj->name(),
                               relobj->processor_specific_flags());
