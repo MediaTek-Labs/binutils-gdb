@@ -1225,6 +1225,12 @@ class General_options
         N_("(nanoMIPS only) Fix binaries for nanoMIPS erratum 142543"),
         N_("(nanoMIPS only) Do not fix binaries for nanoMIPS erratum 142543"));
 
+  DEFINE_bool(allow_abi_mismatch, options::TWO_DASHES, '\0', false,
+        N_("(nanoMIPS only) Allow linking of objects with differing "
+	   " ELF ABI versions"),
+        N_("(nanoMIPS only) Do not allow linking of objects with differing"
+	   " ELF ABI versions"));
+
   DEFINE_string(retain_symbols_file, options::TWO_DASHES, '\0', NULL,
 		N_("keep only symbols listed in this file"), N_("FILE"));
 
