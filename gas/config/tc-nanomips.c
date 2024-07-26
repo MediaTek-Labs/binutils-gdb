@@ -249,6 +249,9 @@ struct nanomips_set_options
 
   /* Enable/disable legacy fall-back for minimize_relocs.  */
   bfd_boolean legacy_minimize_relocs_behavior;
+
+  /* Flag for 64-bit time_t (Y2k38).  */
+  bfd_boolean use_64bit_time;
 };
 
 /* Specifies whether module level options have been checked yet.  */
@@ -265,7 +268,7 @@ static struct nanomips_set_options file_nanomips_opts = {
   /* init_ase */ 0, /* no_balc_stubs */ TRUE, /* legacyregs */ FALSE,
   /* pcrel */ FALSE, /* pid */ FALSE, /* pic */ NO_PIC,
   /* mc_model */ MC_AUTO, /* linkrelax */ FALSE, /* minimize_relocs */ FALSE,
-  /* legacy_minimize_relocs_behavior */ FALSE,
+  /* legacy_minimize_relocs_behavior */ FALSE, /* use_64bit_time */ FALSE,
 };
 
 /* This is similar to file_nanomips_opts, but for the current set of options.  */
@@ -277,7 +280,7 @@ static struct nanomips_set_options nanomips_opts = {
   /* init_ase */ 0, /* no_balc_stubs */ TRUE, /* legacyregs */ FALSE,
   /* pcrel */ FALSE, /* pid */ FALSE, /* pic */ NO_PIC,
   /* mc_model */ MC_AUTO, /* linkrelax */ FALSE, /* minimize_relocs */ FALSE,
-  /* legacy_minimize_relocs_behavior */ FALSE,
+  /* legacy_minimize_relocs_behavior */ FALSE, /* use_64bit_time */ FALSE,
 };
 
 /* Which bits of file_ase were explicitly set or cleared by ASE options.  */
@@ -895,6 +898,8 @@ enum options
   OPTION_NO_MINIMIZE_RELOCS,
   OPTION_SET_DCBITS,
   OPTION_LEGACY_MINIMIZE_RELOCS_BEHAVIOR,
+  OPTION_64BIT_TIME,
+  OPTION_NO_64BIT_TIME,
   OPTION_END_OF_ENUM
 };
 
@@ -961,6 +966,8 @@ struct option md_longopts[] = {
   {"mno-minimize-relocs", no_argument, NULL, OPTION_NO_MINIMIZE_RELOCS},
   {"mset-dcbits", required_argument, NULL, OPTION_SET_DCBITS},
   {"mlegacy-minimize-relocs-behavior", no_argument, NULL, OPTION_LEGACY_MINIMIZE_RELOCS_BEHAVIOR},
+  {"muse-64bit-time_t", no_argument, NULL, OPTION_64BIT_TIME},
+  {"mno-use-64bit-time_t", no_argument, NULL, OPTION_NO_64BIT_TIME},
 
   {NULL, no_argument, NULL, 0}
 };
@@ -9541,6 +9548,14 @@ md_parse_option (int c, const char *arg)
       file_nanomips_opts.legacy_minimize_relocs_behavior = TRUE;
       break;
 
+    case OPTION_64BIT_TIME:
+      file_nanomips_opts.use_64bit_time = TRUE;
+      break;
+
+    case OPTION_NO_64BIT_TIME:
+      file_nanomips_opts.use_64bit_time = FALSE;
+      break;
+
     default:
       return 0;
     }
@@ -12464,6 +12479,9 @@ nanomips_elf_final_processing (void)
 
   if (nanomips_32bitmode)
     elf_elfheader (stdoutput)->e_flags |= EF_NANOMIPS_32BITMODE;
+
+  if (file_nanomips_opts.use_64bit_time)
+    elf_elfheader (stdoutput)->e_ident[EI_ABIVERSION] = 1;
 }
 
 

@@ -809,4 +809,8 @@ if { [istarget nanomips*-*-*] } {
 					[arch_list_matching xnms]
     run_dump_test "ssdata-sections"
     run_list_test "relax-jumptable-overflow"
+
+    run_dump_test "use-64bit-time"
+    run_dump_test "no-use-64bit-time"
+    run_dump_test "use-32bit-time-default"
 }
