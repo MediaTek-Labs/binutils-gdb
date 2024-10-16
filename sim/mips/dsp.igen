@@ -412,7 +412,7 @@
   DSPHI(ac) = DSPLO(ac);
   DSPLO(ac) = GPR[rs];
   if (pos >= 32)
-    Unpredictable ();
+    UnpredictableResult ();
   else
     pos += 32;
   DSPCR &= (~DSPCR_POS_SMASK);
