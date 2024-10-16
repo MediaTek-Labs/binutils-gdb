@@ -151,8 +151,7 @@
 {
   unsigned32 pos = (DSPCR >> DSPCR_POS_SHIFT) & DSPCR_POS_MASK;
   if (pos >= 32)
-    NIA = delayslot_micromips (SD_, NIA + (EXTEND12 (IMMEDIATE) << 1), NIA,
-			       MICROMIPS_DELAYSLOT_SIZE_ANY);
+    NIA = NIA + EXTEND15(((IMMEDIATE & 0x1) << 14) | ((IMMEDIATE >> 1) << 1));
 }
 
 001000,5.RT,5.RS,6.X,0000000101:POOL32A:32::CMP.EQ.PH
