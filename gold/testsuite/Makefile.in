@@ -1134,7 +1134,8 @@ check_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_emit_relocs.sh \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_fix_hw110880.sh \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_justsymbols_muldefs.sh \
-@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_abi_version.sh
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_abi_version.sh \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_justsymbols_script.sh
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@am__append_107 = nanomips_b_out_of_range_pcrel.stdout \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_b_out_of_range_insn32_pcrel.stdout \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_b_out_of_range_nmf_pcrel.stdout \
@@ -1214,7 +1215,11 @@ check_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_abi_version_0.stdout \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_abi_version_1.stdout \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_no_abi_mismatch_01.stdout \
-@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_no_abi_mismatch_10.stdout
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_no_abi_mismatch_10.stdout \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_justsymbols_script.stdout \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_justsymbols_script_1.stderr \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_justsymbols_script_2.stderr \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_no_justsymbols_script.stdout
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@am__append_108 = nanomips_b_out_of_range_pcrel \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_b_out_of_range_insn32_pcrel \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_b_out_of_range_nmf_pcrel \
@@ -1279,7 +1284,13 @@ check_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_abi_version_10.stderr \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_abi_version_01.stderr \
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_abi_version_0.stdout \
-@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_abi_version_1.stdout
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_abi_version_1.stdout \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_justsymbols_script.stdout \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_justsymbols_script_1.stderr \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_justsymbols_script_2.stderr \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_no_justsymbols_script.stdout \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_justsymbols_script.txt \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	nanomips_justsymbols_script_err.txt
 @DEFAULT_TARGET_X86_64_TRUE@am__append_109 = *.dwo *.dwp
 @DEFAULT_TARGET_X86_64_TRUE@am__append_110 = dwp_test_1.sh \
 @DEFAULT_TARGET_X86_64_TRUE@	dwp_test_2.sh
@@ -5719,6 +5730,8 @@ nanomips_justsymbols_muldefs.sh.log: nanomips_justsymbols_muldefs.sh
 	@p='nanomips_justsymbols_muldefs.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 nanomips_abi_version.sh.log: nanomips_abi_version.sh
 	@p='nanomips_abi_version.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
+nanomips_justsymbols_script.sh.log: nanomips_justsymbols_script.sh
+	@p='nanomips_justsymbols_script.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 dwp_test_1.sh.log: dwp_test_1.sh
 	@p='dwp_test_1.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 dwp_test_2.sh.log: dwp_test_2.sh
@@ -9211,6 +9224,63 @@ uninstall-am:
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@%_abi_1.o: %.o
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	cp $< $@
 @DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	printf '\x1' | dd of=$@ bs=1 count=1 seek=8 conv=notrunc
+
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@nanomips_no_justsymbols_script.stdout: nanomips_no_justsymbols_script
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	$(TEST_READELF) -s $< > $@
+
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@nanomips_justsymbols_script.stdout: nanomips_justsymbols_script
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	$(TEST_READELF) -s $< > $@
+
+# Confirm that previous behaviour remains the same
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@nanomips_no_justsymbols_script: nanomips_justsymbols_script_obj.o \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@                                nanomips_justsymbols_script_obj_sup.o \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@                                nanomips_justsymbols_script_err.txt
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	../ld-new nanomips_justsymbols_script_obj.o \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		--just-symbols nanomips_justsymbols_script_err.txt \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		nanomips_justsymbols_script_obj_sup.o -o $@
+
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@nanomips_justsymbols_script_2.stderr:  nanomips_justsymbols_script_obj.o \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@                                    nanomips_justsymbols_script_obj_sup.o \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@                                    nanomips_justsymbols_script_err.txt
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	@if ../ld-new nanomips_justsymbols_script_obj_sup.o \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		-z nobfd-compat-muldefs \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		--just-symbols nanomips_justsymbols_script_err.txt \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		nanomips_justsymbols_script_obj.o -o /dev/null \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		2> $@; \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	then \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		rm -f $@; \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		exit 1; \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	fi
+
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@nanomips_justsymbols_script_1.stderr:  nanomips_justsymbols_script_obj.o \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@                                    nanomips_justsymbols_script_obj_sup.o \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@                                    nanomips_justsymbols_script_err.txt
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	@if ../ld-new nanomips_justsymbols_script_obj.o \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		-z nobfd-compat-muldefs \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		--just-symbols nanomips_justsymbols_script_err.txt \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		nanomips_justsymbols_script_obj_sup.o -o /dev/null \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		2> $@; \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	then \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		rm -f $@; \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		exit 1; \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	fi
+
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@nanomips_justsymbols_script: nanomips_justsymbols_script_obj.o \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@                            nanomips_justsymbols_script_obj_sup.o \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@                            nanomips_justsymbols_script.txt
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	../ld-new nanomips_justsymbols_script_obj.o \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		-z nobfd-compat-muldefs \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		--just-symbols nanomips_justsymbols_script.txt \
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@		nanomips_justsymbols_script_obj_sup.o -o $@
+
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@nanomips_justsymbols_script_err.txt:
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	echo -e "a = 0x1;\nb = 0x2, c = 0x3;\nloop = 0x4;\nfun = 0x5;" > $@
+
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@nanomips_justsymbols_script.txt:
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	echo -e "a = 0x1;\nb = 0x2, c = 0x3;\nloop = 0x4;" > $@
+
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@nanomips_%.o: nanomips_%.s
+@DEFAULT_TARGET_NANOMIPS_TRUE@@NATIVE_OR_CROSS_LINKER_TRUE@	$(TEST_AS) -EL -march=32r6 -m32 -o $@ $<
 
 # Tests for the dwp tool.
 # We don't want to rely yet on GCC support for -gsplit-dwarf,

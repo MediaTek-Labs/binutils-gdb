@@ -248,8 +248,16 @@ Symbol_table::resolve(Sized_symbol<size>* to,
 		      bool is_default_version)
 {
   bool to_is_ordinary;
-  const unsigned int to_shndx = to->shndx(&to_is_ordinary);
-
+  unsigned int to_shndx;
+  if (to->is_absolute())
+    {
+      to_shndx = elfcpp::SHN_ABS;
+      to_is_ordinary = false;
+    }
+  else
+    {
+      to_shndx = to->shndx(&to_is_ordinary);
+    }
   // It's possible for a symbol to be defined in an object file
   // using .symver to give it a version, and for there to also be
   // a linker script giving that symbol the same version.  We
@@ -910,6 +918,9 @@ Symbol_table::report_resolve_problem(bool is_error, const char* msg,
     case INCREMENTAL_BASE:
       objname = _("linker defined");
       break;
+    case JUST_SYMBOLS_SCRIPT:
+      objname = _("just symbols script");
+      break;
     default:
       gold_unreachable();
     }
@@ -923,6 +934,8 @@ Symbol_table::report_resolve_problem(bool is_error, const char* msg,
 
   if (to->source() == Symbol::FROM_OBJECT)
     objname = to->object()->name().c_str();
+  else if (to->source() == Symbol::JUST_SYMBOLS_SCRIPT_SYMBOL)
+    objname = _("just symbols script");
   else
     objname = _("command line");
   gold_info("%s: %s: previous definition here", program_name, objname);
@@ -1025,6 +1038,7 @@ Symbol::override_base_with_special(const Symbol* from)
       break;
     case IS_CONSTANT:
     case IS_UNDEFINED:
+    case JUST_SYMBOLS_SCRIPT_SYMBOL:
       break;
     default:
       gold_unreachable();

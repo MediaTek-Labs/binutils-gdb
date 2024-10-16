@@ -5866,7 +5866,8 @@ Target_nanomips<size, big_endian>::set_gp(Layout* layout, Symbol_table* symtab)
     static_cast<Sized_symbol<size>*>(symtab->lookup("_gp"));
 
   // Set _gp symbol if the linker script hasn't created it.
-  if (gp == NULL || gp->source() != Symbol::IS_CONSTANT)
+  if (gp == NULL || (gp->source() != Symbol::IS_CONSTANT
+      && gp->source() != Symbol::JUST_SYMBOLS_SCRIPT_SYMBOL))
     {
       // If there is no .got section, gp should be based on .sdata.
       Output_data* gp_section = (this->got_ != NULL

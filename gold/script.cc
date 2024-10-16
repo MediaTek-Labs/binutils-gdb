@@ -1471,6 +1471,16 @@ class Parser_closure
   script_info()
   { return this->script_info_; }
 
+  struct Just_symbols_script_symbol
+  {
+    const char* name;
+    size_t name_len;
+    uint64_t val;
+  };
+
+  std::vector<Just_symbols_script_symbol>& just_symbols_script_symbols()
+  { return this->just_symbols_script_symbols_; }
+
  private:
   // The name of the file we are reading.
   const char* filename_;
@@ -1509,6 +1519,8 @@ class Parser_closure
   Input_arguments* inputs_;
   // Pointer to incremental linking info.
   Script_info* script_info_;
+  // Array for symbols defined in just symbols script
+  std::vector<Just_symbols_script_symbol> just_symbols_script_symbols_;
 };
 
 // FILE was found as an argument on the command line.  Try to read it
@@ -1598,6 +1610,56 @@ read_input_script(Workqueue* workqueue, Symbol_table* symtab, Layout* layout,
 
   *used_next_blocker = true;
 
+  return true;
+}
+
+bool
+read_just_symbols_input_script(Symbol_table* symtab, Layout* layout,
+        const Input_argument* input_argument, Input_file* input_file)
+{
+  // TODO: Incremental inputs
+  if (!parameters->target_valid())
+    {
+      gold_error(_("Valid target is needed to read just symbols script!"));
+
+      gold_info(_("Try running the link with just symbols script after "
+            "an object file"));
+      return false;
+    }
+  std::string input_string;
+  Lex::read_file(input_file, &input_string);
+
+  Lex lex(input_string.c_str(), input_string.length(),
+        PARSING_JUST_SYMBOLS_SCRIPT);
+
+  Parser_closure closure(input_file->filename().c_str(),
+        input_argument->file().options(),
+        false,
+        false,
+        input_file->is_in_sysroot(),
+        NULL,
+        layout->script_options(),
+        &lex,
+        input_file->will_search_for(),
+        NULL
+  );
+
+  if (yyparse(&closure) != 0)
+    {
+      gold_error(_("Error while parsing just symbols script"));
+      return false;
+    }
+
+  std::vector<Parser_closure::Just_symbols_script_symbol>& new_symbols
+        = closure.just_symbols_script_symbols();
+  for (auto& new_symbol : new_symbols)
+    {
+      std::string sym_name(new_symbol.name, new_symbol.name_len);
+      symtab->define_as_constant(sym_name.c_str(), NULL,
+            Symbol_table::JUST_SYMBOLS_SCRIPT, new_symbol.val, 0,
+            elfcpp::STT_NOTYPE, elfcpp::STB_GLOBAL, elfcpp::STV_DEFAULT, 0, 0,
+            false);
+    }
   return true;
 }
 
@@ -3563,4 +3625,12 @@ script_set_overlay_region(void* closurev, const char* name, size_t namelen,
     }
 
   ss->set_overlay_memory_region(mr, set_vma);
+}
+
+extern "C" void
+add_just_symbols_script_symbol(void* closurev, const char* sym,
+                                size_t sym_len, uint64_t value)
+{
+  Parser_closure* closure = static_cast<Parser_closure*>(closurev);
+  closure->just_symbols_script_symbols().push_back({sym, sym_len, value});
 }

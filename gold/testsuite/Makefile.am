@@ -5048,6 +5048,76 @@ nanomips_%.o: nanomips_%.s
 MOSTLYCLEANFILES += nanomips_abi_version_10.stderr nanomips_abi_version_01.stderr \
               nanomips_abi_version_0.stdout nanomips_abi_version_1.stdout
 
+check_SCRIPTS += nanomips_justsymbols_script.sh
+check_DATA += nanomips_justsymbols_script.stdout \
+            nanomips_justsymbols_script_1.stderr \
+            nanomips_justsymbols_script_2.stderr \
+            nanomips_no_justsymbols_script.stdout
+
+nanomips_no_justsymbols_script.stdout: nanomips_no_justsymbols_script
+	$(TEST_READELF) -s $< > $@
+
+nanomips_justsymbols_script.stdout: nanomips_justsymbols_script
+	$(TEST_READELF) -s $< > $@
+
+# Confirm that previous behaviour remains the same
+nanomips_no_justsymbols_script: nanomips_justsymbols_script_obj.o \
+                                nanomips_justsymbols_script_obj_sup.o \
+                                nanomips_justsymbols_script_err.txt
+	../ld-new nanomips_justsymbols_script_obj.o \
+		--just-symbols nanomips_justsymbols_script_err.txt \
+		nanomips_justsymbols_script_obj_sup.o -o $@
+
+nanomips_justsymbols_script_2.stderr:  nanomips_justsymbols_script_obj.o \
+                                    nanomips_justsymbols_script_obj_sup.o \
+                                    nanomips_justsymbols_script_err.txt
+	@if ../ld-new nanomips_justsymbols_script_obj_sup.o \
+		-z nobfd-compat-muldefs \
+		--just-symbols nanomips_justsymbols_script_err.txt \
+		nanomips_justsymbols_script_obj.o -o /dev/null \
+		2> $@; \
+	then \
+		rm -f $@; \
+		exit 1; \
+	fi
+
+nanomips_justsymbols_script_1.stderr:  nanomips_justsymbols_script_obj.o \
+                                    nanomips_justsymbols_script_obj_sup.o \
+                                    nanomips_justsymbols_script_err.txt
+	@if ../ld-new nanomips_justsymbols_script_obj.o \
+		-z nobfd-compat-muldefs \
+		--just-symbols nanomips_justsymbols_script_err.txt \
+		nanomips_justsymbols_script_obj_sup.o -o /dev/null \
+		2> $@; \
+	then \
+		rm -f $@; \
+		exit 1; \
+	fi
+
+nanomips_justsymbols_script: nanomips_justsymbols_script_obj.o \
+                            nanomips_justsymbols_script_obj_sup.o \
+                            nanomips_justsymbols_script.txt
+	../ld-new nanomips_justsymbols_script_obj.o \
+		-z nobfd-compat-muldefs \
+		--just-symbols nanomips_justsymbols_script.txt \
+		nanomips_justsymbols_script_obj_sup.o -o $@
+
+nanomips_justsymbols_script_err.txt:
+	echo -e "a = 0x1;\nb = 0x2, c = 0x3;\nloop = 0x4;\nfun = 0x5;" > $@
+
+nanomips_justsymbols_script.txt:
+	echo -e "a = 0x1;\nb = 0x2, c = 0x3;\nloop = 0x4;" > $@
+
+nanomips_%.o: nanomips_%.s
+	$(TEST_AS) -EL -march=32r6 -m32 -o $@ $<
+
+MOSTLYCLEANFILES += nanomips_justsymbols_script.stdout \
+                    nanomips_justsymbols_script_1.stderr \
+                    nanomips_justsymbols_script_2.stderr \
+                    nanomips_no_justsymbols_script.stdout \
+                    nanomips_justsymbols_script.txt \
+                    nanomips_justsymbols_script_err.txt
+
 endif DEFAULT_TARGET_NANOMIPS
 
 endif NATIVE_OR_CROSS_LINKER

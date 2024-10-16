@@ -575,6 +575,10 @@ version_script_push_lang(void* closure, const char* lang, int langlen);
 extern void
 version_script_pop_lang(void* closure);
 
+extern void
+add_just_symbols_script_symbol(void* closurev, const char* sym,
+                              size_t sym_len, uint64_t value);
+
 #ifdef __cplusplus
 } // End extern "C"
 #endif

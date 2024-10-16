@@ -139,6 +139,7 @@ Mapfile::report_include_archive_member(const std::string& member_name,
 	case Symbol::IN_OUTPUT_DATA:
 	case Symbol::IN_OUTPUT_SEGMENT:
 	case Symbol::IS_CONSTANT:
+	case Symbol::JUST_SYMBOLS_SCRIPT_SYMBOL:
 	  // We should only see an undefined symbol here.
 	  gold_unreachable();
 	}

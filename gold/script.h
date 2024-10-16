@@ -619,6 +619,12 @@ read_input_script(Workqueue*, Symbol_table*, Layout*, Dirsearch*, int,
 		  const Input_argument*, Input_file*,
 		  Task_token* next_blocker, bool* used_next_blocker);
 
+// Read script defining constant absolute symbols if placed after
+// --just-symbols command line argument
+bool
+read_just_symbols_input_script(Symbol_table*, Layout*, const Input_argument*,
+      Input_file*);
+
 // FILE was found as an argument to --script (-T).
 // Read it as a script, and execute its contents immediately.
 

@@ -934,8 +934,18 @@ Read_script::locks(Task_locker*)
 void
 Read_script::run(Workqueue* workqueue)
 {
-  bool used_next_blocker;
-  if (!read_input_script(workqueue, this->symtab_, this->layout_,
+  bool used_next_blocker = false;
+  if (this->input_file_->just_symbols()
+      && parameters->options().nobfd_compat_muldefs())
+    {
+      if (!read_just_symbols_input_script(this->symtab_, this->layout_,
+            this->input_argument_, this->input_file_))
+  {
+    gold_error(_("invalid just symbols script: %s"),
+          this->input_file_->filename().c_str());
+  }
+    }
+  else if (!read_input_script(workqueue, this->symtab_, this->layout_,
 			 this->dirpath_, this->dirindex_, this->input_objects_,
 			 this->mapfile_, this->input_group_,
 			 this->input_argument_, this->input_file_,

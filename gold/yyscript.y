@@ -206,6 +206,7 @@
 %token PARSING_SECTIONS_BLOCK
 %token PARSING_SECTION_COMMANDS
 %token PARSING_MEMORY_DEF
+%token PARSING_JUST_SYMBOLS_SCRIPT
 
 /* Non-terminal types, where needed.  */
 
@@ -236,6 +237,7 @@
 top:
 	  PARSING_LINKER_SCRIPT linker_script
 	| PARSING_VERSION_SCRIPT version_script
+	| PARSING_JUST_SYMBOLS_SCRIPT just_symbols_script
 	| PARSING_DEFSYM defsym_expr
         | PARSING_DYNAMIC_LIST dynamic_list_expr
         | PARSING_SECTIONS_BLOCK sections_block
@@ -1189,6 +1191,16 @@ vers_defns:
 					    sizeof("extern") - 1, 1);
 	    }
 	;
+
+just_symbols_script:
+	just_symbols_expr just_symbols_script
+	| /* empty */
+	;
+just_symbols_expr:
+	string '=' INTEGER end
+	{
+		add_just_symbols_script_symbol(closure, $1.value, $1.length, $3);
+	}
 
 /* A string can be either a STRING or a QUOTED_STRING.  Almost all the
    time we don't care, and we use this rule.  */

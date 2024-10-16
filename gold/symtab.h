@@ -91,7 +91,9 @@ class Symbol
     // section.
     CONSTANT_IN_OUTPUT_SECTION,
     // Symbol is undefined.
-    IS_UNDEFINED
+    IS_UNDEFINED,
+    // Symbol comes from just symbols script
+    JUST_SYMBOLS_SCRIPT_SYMBOL
   };
 
   // When the source is IN_OUTPUT_SEGMENT, we need to describe what
@@ -157,6 +159,10 @@ class Symbol
   Source
   source() const
   { return this->source_; }
+
+  void
+  set_source_to_just_symbols_script()
+  { this->source_ = JUST_SYMBOLS_SCRIPT_SYMBOL; }
 
   // Return the object with which this symbol is associated.
   Object*
@@ -569,7 +575,8 @@ class Symbol
     return ((this->source_ == FROM_OBJECT
 	     && this->shndx(&is_ordinary) == elfcpp::SHN_ABS
 	     && !is_ordinary)
-	    || this->source_ == IS_CONSTANT);
+	    || this->source_ == IS_CONSTANT
+	    || this->source_ == JUST_SYMBOLS_SCRIPT_SYMBOL);
   }
 
   // Return whether this is a common symbol.
@@ -1416,6 +1423,8 @@ class Symbol_table
     // Defined by the linker during an incremental base link, but not
     // a predefined symbol (e.g., common, defined in script).
     INCREMENTAL_BASE,
+    // Defined in a just symbols script
+    JUST_SYMBOLS_SCRIPT,
   };
 
   // The order in which we sort common symbols.

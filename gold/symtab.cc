@@ -505,6 +505,7 @@ Symbol::output_section() const
 
     case IN_OUTPUT_SEGMENT:
     case IS_CONSTANT:
+    case JUST_SYMBOLS_SCRIPT_SYMBOL:
     case IS_UNDEFINED:
       return NULL;
 
@@ -2297,6 +2298,10 @@ Symbol_table::do_define_as_constant(
   sym->init_constant(name, version, value, symsize, type, binding, visibility,
 		     nonvis, defined == PREDEFINED);
 
+  // FIXME: make a better way of setting the source of symbol to just symbols
+  // script
+  if (defined == JUST_SYMBOLS_SCRIPT)
+    sym->set_source_to_just_symbols_script();
   if (oldsym == NULL)
     {
       // Version symbols are absolute symbols with name == version.
@@ -2934,6 +2939,7 @@ Symbol_table::compute_final_value(
 
     case Symbol::CONSTANT_IN_OUTPUT_SECTION:
     case Symbol::IS_CONSTANT:
+    case Symbol::JUST_SYMBOLS_SCRIPT_SYMBOL:
       value = sym->value();
       break;
 
@@ -3240,6 +3246,7 @@ Symbol_table::sized_write_globals(const Stringpool* sympool,
 	  break;
 
 	case Symbol::IS_CONSTANT:
+	case Symbol::JUST_SYMBOLS_SCRIPT_SYMBOL:
 	  shndx = elfcpp::SHN_ABS;
 	  break;
 
@@ -3290,6 +3297,7 @@ Symbol_table::sized_write_globals(const Stringpool* sympool,
       switch (sym->source())
 	{
 	case Symbol::IS_CONSTANT:
+	case Symbol::JUST_SYMBOLS_SCRIPT_SYMBOL:
 	  shndx = elfcpp::SHN_ABS;
 	  break;
 	case Symbol::IS_UNDEFINED:
