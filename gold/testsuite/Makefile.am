@@ -5118,6 +5118,38 @@ MOSTLYCLEANFILES += nanomips_justsymbols_script.stdout \
                     nanomips_justsymbols_script.txt \
                     nanomips_justsymbols_script_err.txt
 
+# Test that the eh_frame start/end symbols are properly created
+check_SCRIPTS += nanomips_eh_frame_start_end_syms.sh
+check_DATA += nanomips_eh_frame_start_end_syms_1.stdout \
+              nanomips_eh_frame_start_end_syms_2.stdout
+
+nanomips_eh_frame_start_end_syms_2.stdout: nanomips_eh_frame_start_end_syms_2
+	$(TEST_READELF) -Ss $< > $@
+
+nanomips_eh_frame_start_end_syms_1.stdout: nanomips_eh_frame_start_end_syms_1
+	$(TEST_READELF) -Ss $< > $@
+
+nanomips_eh_frame_start_end_syms_2: nanomips_eh_frame_start_end_syms_2.o \
+                                    ../ld-new
+	../ld-new --section-start .eh_frame=0x1000 --section-start \
+	          .eh_frame_hdr=0x2000 --section-start .text=0x3000 \
+			  --eh-frame-hdr \
+			  nanomips_eh_frame_start_end_syms_2.o -o $@
+
+nanomips_eh_frame_start_end_syms_1: nanomips_eh_frame_start_end_syms_1.o \
+                                    ../ld-new
+	../ld-new --section-start .eh_frame=0x1000 --section-start .text=0x2000 \
+	          nanomips_eh_frame_start_end_syms_1.o -o $@
+
+nanomips_eh_frame_start_end_syms_2.o: nanomips_eh_frame_start_end_syms.s
+	$(TEST_AS) -EL -march=32r6 -m32 --defsym hdr=1 -o $@ $<
+
+nanomips_eh_frame_start_end_syms_1.o: nanomips_eh_frame_start_end_syms.s
+	$(TEST_AS) -EL -march=32r6 -m32 -o $@ $<
+
+MOSTLYCLEANFILES += nanomips_eh_frame_start_end_syms_1 \
+                    nanomips_eh_frame_start_end_syms_2
+
 endif DEFAULT_TARGET_NANOMIPS
 
 endif NATIVE_OR_CROSS_LINKER

@@ -2169,6 +2169,11 @@ class Target_nanomips : public Sized_target<size, big_endian>
     sections.insert(".nanoMIPS.abiflags");
   }
 
+  // Defines eh_frame and eh_frame_hdr start and end symbols if these
+  // sections are defined.
+  void
+  do_define_standard_symbols(Symbol_table*, Layout*);
+
  private:
   // The class which scans relocations.
   class Scan
@@ -2369,6 +2374,12 @@ class Target_nanomips : public Sized_target<size, big_endian>
   // Calculate value of _gp symbol.
   void
   set_gp(Layout*, Symbol_table*);
+
+  // Define start and end symbols, used to define eh_frame start and
+  // end
+  void
+  define_start_end_symbols(const char* start, const char* end,
+        Symbol_table*, Output_section*);
 
   // Information about this specific target which we pass to the
   // general Target structure.
@@ -6747,6 +6758,69 @@ Target_nanomips<size, big_endian>::do_finalize_sections(
                                     : this->stubs_->rel_stubs());
   layout->add_target_dynamic_tags(true, this->got_, rel_stubs,
                                   this->rel_dyn_, true, false);
+}
+
+template <int size, bool big_endian>
+void
+Target_nanomips<size, big_endian>::do_define_standard_symbols(
+    Symbol_table* symtab,
+    Layout* layout)
+{
+  Output_section* eh_frame_section =
+        layout->find_output_section(".eh_frame");
+
+  if (eh_frame_section != NULL)
+    {
+      this->define_start_end_symbols("__eh_frame_start",
+            "__eh_frame_end",
+            symtab,
+            eh_frame_section);
+      Output_section* eh_frame_hdr_section =
+            layout->find_output_section(".eh_frame_hdr");
+
+      if (eh_frame_hdr_section != NULL)
+        this->define_start_end_symbols("__eh_frame_hdr_start",
+            "__eh_frame_hdr_end",
+            symtab,
+            eh_frame_hdr_section);
+    }
+}
+
+template <int size, bool big_endian>
+void
+Target_nanomips<size, big_endian>::define_start_end_symbols(
+      const char* start,
+      const char* end,
+      Symbol_table* symtab,
+      Output_section* out_sec)
+{
+  gold_assert(out_sec != NULL);
+
+  symtab->define_in_output_data(start,
+      NULL, // version
+      Symbol_table::PREDEFINED,
+      out_sec,
+      0, // value
+      0, // symsize
+      elfcpp::STT_NOTYPE,
+      elfcpp::STB_GLOBAL,
+      elfcpp::STV_HIDDEN,
+      0, // nonvis
+      false, // offset_is_from_end
+      true); // only_if_ref
+
+  symtab->define_in_output_data(end,
+      NULL, // version
+      Symbol_table::PREDEFINED,
+      out_sec,
+      0, // value
+      0, // symsize
+      elfcpp::STT_NOTYPE,
+      elfcpp::STB_GLOBAL,
+      elfcpp::STV_HIDDEN,
+      0, // nonvis
+      true, // offset_is_from_end
+      true); // only_if_ref
 }
 
 // Relocate section data.
