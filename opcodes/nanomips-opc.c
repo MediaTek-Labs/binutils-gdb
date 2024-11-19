@@ -853,7 +853,7 @@ const struct nanomips_opcode nanomips_opcodes[] = {
 {"pref",	"",		"k,A(c)",	0,     (int) M_PREF_AC,	INSN_MACRO,		0,	I38,	0},
 {"prefe",	"",		"k,+j(b)",	0xa4001a00, 0xfc007f00,	RD_3,			0,	0,	EVA}, /* preceded by SYNCIE */
 {"prefe",	"",		"k,A(c)",	0,    (int) M_PREFE_AC,	INSN_MACRO,		0,	0,	EVA},
-{"prepend",	"",		"d,-n,t,+I",	0x2000001f, 0xfc00003f, WR_1|RD_3,	INSN2_ALIAS,	0,	D32}, /* EXTW */
+{"prepend",	"",		"d,-m,s,+I",	0x2000001f, 0xfc00003f, WR_1|RD_3,	INSN2_ALIAS,	0,	D32}, /* EXTW */
 {"raddu.w.qb",	"",		"t,s",		0x2000f13f, 0xfc00ffff,	WR_1|RD_2,		0,	0,	D32},
 {"rddsp",	"",		"t",		0x201fc67f, 0xfc1fffff,	WR_1,		INSN2_ALIAS,	0,	D32},
 {"rddsp",	"",		"t,8",		0x2000067f, 0xfc003fff,	WR_1,			0,	0,	D32},

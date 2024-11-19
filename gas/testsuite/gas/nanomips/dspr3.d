@@ -41,8 +41,8 @@ Disassembly of section .text:
 [0-9a-f]+ <text_label\+0x78> 2319 fbcd 	precr_sra.ph.w	t8,t9,31
 [0-9a-f]+ <text_label\+0x7c> 233a 07cd 	precr_sra_r.ph.w	t9,k0,0
 [0-9a-f]+ <text_label\+0x80> 233a ffcd 	precr_sra_r.ph.w	t9,k0,31
-[0-9a-f]+ <text_label\+0x84> 237a d01f 	extw	k0,k0,k1,0
-[0-9a-f]+ <text_label\+0x88> 237a d7df 	extw	k0,k0,k1,31
+[0-9a-f]+ <text_label\+0x84> 235b d01f 	extw	k0,k1,k0,0
+[0-9a-f]+ <text_label\+0x88> 235b d7df 	extw	k0,k1,k0,31
 [0-9a-f]+ <text_label\+0x8c> 237c 01ff 	shra.qb	k1,gp,0
 [0-9a-f]+ <text_label\+0x90> 237c e1ff 	shra.qb	k1,gp,7
 [0-9a-f]+ <text_label\+0x94> 239d 11ff 	shra_r.qb	gp,sp,0
