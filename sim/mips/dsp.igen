@@ -311,6 +311,8 @@
   h0 = (unsigned64)v1 + (unsigned64)v2;
   if (h0 & 0x100000000LL)
     DSPCR |= DSPCR_CARRY;
+  else
+    DSPCR &= ~DSPCR_CARRY;
   GPR[rd] = EXTEND32 (h0);
 }
 
