@@ -160,6 +160,12 @@ ins_sres16_fields(unsigned int, unsigned int fields, uint32_t data)
   return (data | rt1 | u);
 }
 
+unsigned int
+ins_bposge32c_fields(unsigned int, unsigned int, uint32_t data)
+{
+  return (data | (1U << 18));
+}
+
 Nanomips_insn_property::Nanomips_insn_property(
     const char* name,
     extract_reg_func treg_func,

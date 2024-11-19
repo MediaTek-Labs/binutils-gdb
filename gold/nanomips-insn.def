@@ -117,6 +117,8 @@
 #define BNEC32(reloc) NIT32("bnec", 0xa8000000, reloc, INS_REG(21, 5, TREG), INS_REG(16, 5, SREG))
 // bneic $reg, u, sym
 #define BNEIC32 NIT32("bneic", 0xc8100000, NONE, INS_REG(21, 5, TREG), INS_REG(11, 7, SREG))
+// bposge32c sym
+#define BPOSGE32C NIT32("bposge32c", 0x88004000, NONE, NULL, ins_bposge32c_fields)
 // jalrc $ra, $reg
 #define JALRC32 NIT32("jalrc", 0x4be00000, NONE, NULL, INS_REG(16, 5, SREG))
 // jalrc $zero, $reg
@@ -169,6 +171,8 @@
 #define BALC16 NIT16("balc[16]", 0x3800, PC10_S1, NULL, NULL)
 // bc16 sym
 #define BC16 NIT16("bc[16]", 0x1800, PC10_S1, NULL, NULL)
+// for trampolines
+#define BC16_SKIP NIT16("bc[16]", 0x1800, NONE, NULL, NULL)
 // beqc16 $reg, $reg, sym
 #define BEQC16 NIT16("beqc[16]", 0xd800, PC4_S1, INS_REG(7, 3, TREG), INS_REG(4, 3, SREG))
 // beqzc16 $reg, sym
@@ -332,6 +336,10 @@ NTT(PCREL32_LONG,     RELS(R(PC11_S1)),                               INSNS(BLTI
 // bltiuc $reg, u, sym
 NIP32("bltiuc",         0xc81c0000,    EXT_REG(21, 5),       NULL,                  EXT_REG(11, 7),       NULL)
 NTT(PCREL32_LONG,     RELS(R(PC11_S1)),                               INSNS(BGEIUC32, BC32))
+
+// bposge32c sym
+NIP32("bposge32c",      0x88004000,    NULL,                 NULL,                  NULL,                 NULL)
+NTT(PCREL32_TRAMP,    RELS(R(PC14_S1)),                               INSNS(BPOSGE32C, BC16_SKIP, BC32))
 
 // lw $reg, %reloc(sym)($gp)
 NIP32("lw[gp]",         0x40000002,    EXT_REG(21, 5),       valid_reg,             NULL,                 NULL)

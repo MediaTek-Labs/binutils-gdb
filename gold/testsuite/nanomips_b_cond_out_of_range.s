@@ -18,6 +18,7 @@ __start:
 	bltic	$r2,4,foo
 	bgeiuc	$r3,127,foo
 	bltiuc	$r24,6,foo
+	bposge32c foo
 	nop
 	.end	__start
 	.size	__start, .-__start

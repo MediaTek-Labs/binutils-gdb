@@ -1393,10 +1393,13 @@ class Nanomips_input_section : public Output_relaxed_input_section
   { return this->relocs_.len / this->reloc_size_; }
 
   // Add relocation for conditional branch.  Set the destination address to
-  // point to location after bc instruction.
+  // point to location after specified delta (usually after some bc instruction)
   void
-  add_branch_reloc(unsigned int reloc, uint64_t address)
-  { this->cond_branches_.push_back(Cond_branch(reloc, address, address + 8)); }
+  add_branch_reloc(unsigned int reloc, uint64_t address, uint64_t delta)
+  {
+    this->cond_branches_.push_back(Cond_branch(reloc, address,
+                                               address + delta));
+  }
 
   // Return the conditional branch relocations.
   Conditional_branches*
@@ -4662,6 +4665,13 @@ Nanomips_transformations<size, big_endian>::transform(
         sreg = treg;
       break;
     case elfcpp::R_NANOMIPS_PC14_S1:
+      // bposge32c doesn't have registers
+      if (insn_property->name() == "bposge32c")
+        {
+          treg = 0;
+          sreg = 0;
+          break;
+        }
       treg = insn_property->treg(insn);
       sreg = insn_property->sreg(insn);
       // Check if we need to swap registers.
@@ -4749,13 +4759,26 @@ Nanomips_transformations<size, big_endian>::transform(
       gold_unreachable();
     }
 
-  // Add conditional branch relocation.  In this case, we are transforming
-  // conditional branch into the opposite conditional branch and bc instruction.
+  // Add conditional branch relocation(s).
+  // Some instructions (bposge32c) cannot be transformed to opposite conditional
+  // branch and bc instruction. They are transformed to same conditional branch
+  // (trampoline to bc), bc16 that skips bc, and bc that jumps to the original
+  // target.
+  if (r_type == elfcpp::R_NANOMIPS_PC14_S1
+      && type == TT_PCREL32_TRAMP)
+    {
+      input_section->add_branch_reloc(r_type, r_offset, 6);
+      input_section->add_branch_reloc(elfcpp::R_NANOMIPS_PC10_S1,
+                                      r_offset + 4, 6);
+    }
+  // In this case, we are transforming conditional branch into the opposite
+  // conditional branch and bc instruction.
   // This cover cases where for bc instruction we need to do expansion.
-  if ((r_type == elfcpp::R_NANOMIPS_PC14_S1
-       || r_type == elfcpp::R_NANOMIPS_PC11_S1)
-      && (type != TT_PCREL16 && type != TT_PCREL16_ZERO))
-    input_section->add_branch_reloc(r_type, r_offset);
+  else if ((r_type == elfcpp::R_NANOMIPS_PC14_S1
+            || r_type == elfcpp::R_NANOMIPS_PC11_S1)
+           && (type != TT_PCREL16 && type != TT_PCREL16_ZERO
+            && type != TT_PCREL32_TRAMP))
+    input_section->add_branch_reloc(r_type, r_offset, 8);
 
   // Discard relocation for TT_DISCARD type.
   if (type == TT_DISCARD
@@ -5384,6 +5407,10 @@ Nanomips_expand_insn<size, big_endian>::expand_type(
         // Transform lapc into aluipc/lui, ori.
         return pcrel ? TT_PCREL32_LONG : TT_ABS32_LONG;
     case elfcpp::R_NANOMIPS_PC14_S1:
+      // Transform to a trampoline branch, bc16, and bc instruction.
+      if (insn_property->name() == "bposge32c")
+        return TT_PCREL32_TRAMP;
+      /* FALLTHROUGH */
     case elfcpp::R_NANOMIPS_PC11_S1:
       // Transform into opposite branch and bc instruction.
       return TT_PCREL32_LONG;
@@ -6066,7 +6093,14 @@ Target_nanomips<size, big_endian>::relocate_branch(
   typedef Nanomips_relocate_functions<size, big_endian> Reloc_funcs;
   typename Reloc_funcs::Status reloc_status = Reloc_funcs::STATUS_OKAY;
 
-  Valtype value = destination - (address + 4);
+  const Nanomips_reloc_property* reloc_property =
+    nanomips_reloc_property_table->get_reloc_property(r_type);
+  gold_assert(reloc_property != NULL);
+  // 6-byte instructions shouldn't occur here for now.
+  gold_assert(reloc_property->size() != 48);
+
+  unsigned int insn_size = reloc_property->size() == 16 ? 2 : 4;
+  Valtype value = destination - (address + insn_size);
   switch (r_type)
     {
     case elfcpp::R_NANOMIPS_PC14_S1:
@@ -6074,6 +6108,9 @@ Target_nanomips<size, big_endian>::relocate_branch(
       break;
     case elfcpp::R_NANOMIPS_PC11_S1:
       reloc_status = Reloc_funcs::relpc11_s1(view, value, true);
+      break;
+    case elfcpp::R_NANOMIPS_PC10_S1:
+      reloc_status = Reloc_funcs::relpc10_s1(view, value, true);
       break;
     default:
       gold_unreachable();

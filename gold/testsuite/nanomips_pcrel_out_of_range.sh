@@ -179,6 +179,9 @@ check nanomips_b_cond_out_of_range_pcrel.stdout "  1060:	c87f f804 	bltiuc	t5,12
 check nanomips_b_cond_out_of_range_pcrel.stdout "  1064:	281f ffb8 	bc	201020 <foo>"
 check nanomips_b_cond_out_of_range_pcrel.stdout "  1068:	cb0c 3004 	bgeiuc	t8,6,.*"
 check nanomips_b_cond_out_of_range_pcrel.stdout "  106c:	281f ffb0 	bc	201020 <foo>"
+check nanomips_b_cond_out_of_range_pcrel.stdout "  1070:	8804 4002 	bposge32c	1076"
+check nanomips_b_cond_out_of_range_pcrel.stdout "  1074:	1804      	bc	107a"
+check nanomips_b_cond_out_of_range_pcrel.stdout "  1076:	281f ffa6 	bc	201020 <foo>"
 
 
 # 1. All transformations (BC/BALC/MOVE.BALC) with fix enabled, +ve and -ve minimum offsets

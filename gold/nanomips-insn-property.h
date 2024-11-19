@@ -78,6 +78,8 @@ enum Transform_type
   TT_PCREL16_ZERO,
   // Transform to avoid hw110880 issue
   TT_IMM48_FIX,
+  // Pc-relative trampoline transformation
+  TT_PCREL32_TRAMP,
 };
 
 // The Nanomips_insn_template class is to store information about a

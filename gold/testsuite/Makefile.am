@@ -4445,7 +4445,7 @@ nanomips_b_out_of_range_nmf_abs.o: nanomips_b_out_of_range.s
 	$(TEST_AS) -EL -march=32r6 -m32 -mno-pcrel -o $@ $<
 
 nanomips_b_cond_out_of_range_pcrel.o: nanomips_b_cond_out_of_range.s
-	$(TEST_AS) -EL -march=32r6 -m32 -mpcrel -o $@ $<
+	$(TEST_AS) -EL -march=i7200 -m32 -mpcrel -o $@ $<
 
 nanomips_move_balc_out_of_range_pcrel.o: nanomips_move_balc_out_of_range.s
 	$(TEST_AS) -EL -march=32r6 -m32 -mpcrel -o $@ $<
